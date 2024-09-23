@@ -1,0 +1,84 @@
+#@data/values-schema
+---
+
+#@schema/desc "Whether Dependency Track will check for memory and CPU requirements at startup time."
+system_requirement_check: true
+
+#@schema/desc "Domain name for Dependency Track. It must be a valid DNS name."
+#@schema/validation min_len=4
+domain_name: ""
+
+#@schema/desc "A reference to the ClusterIssuer to use for enabling TLS in Dependency Track."
+#@schema/examples ("Kadras private CA", "kadras-ca-issuer")
+#@schema/validation min_len=4
+ingress_issuer: ""
+
+#@schema/desc "Settings for the API Server component."
+api_server:
+  #@schema/desc "Settings for logging."
+  logging:
+    #@schema/desc "Log verbosity level. Options: `trace`, `debug`, `info`, `warn`, `error`."
+    #@schema/validation one_of=["trace", "debug", "info", "warn", "error"]
+    level: info
+    #@schema/desc "Log encoding format. Options: `console`, `json`."
+    #@schema/validation one_of=["console", "json"]
+    format: console
+  #@schema/desc "Settings for metrics."
+  metrics:
+    #@schema/desc "Whether to enable the generation of Prometheus metrics."
+    enabled: true
+  #@schema/desc "Resource configuration for the API Server component."
+  resources:
+    requests:
+      #@schema/desc "CPU requests configuration for the API Server component."
+      cpu: "0.5"
+      #@schema/desc "Memory requests configuration for the API Server component."
+      memory: "5Gi"
+    limits:
+      #@schema/desc "CPU limits configuration for the API Server component."
+      cpu: "4"
+      #@schema/desc "Memory limits configuration for the API Server component."
+      memory: "5Gi"
+  #@schema/desc "Storage configuration for the API Server component."
+  storage:
+    #@schema/desc "Class name for the PersistenceVolume to create."
+    class_name: ""
+    #@schema/desc "Size of the PersistenceVolume to create."
+    size: 1Gi
+
+#@schema/desc "Settings for the Frontend component."
+frontend:
+  #@schema/desc "The number of Frontend replicas. In order to enable high availability, it should be greater than 1."
+  #@schema/validation min=1
+  replicas: 1
+  #@schema/desc "Resource configuration for the Frontend component."
+  resources:
+    requests:
+      #@schema/desc "CPU requests configuration for the Frontend component."
+      cpu: "150m"
+      #@schema/desc "Memory requests configuration for the Frontend component."
+      memory: "64Mi"
+    limits:
+      #@schema/desc "CPU limits configuration for the Frontend component."
+      cpu: "500m"
+      #@schema/desc "Memory limits configuration for the Frontend component."
+      memory: "128Mi"
+
+#@schema/desc "Settings for the corporate proxy."
+proxy:
+  #@schema/desc "The HTTPS proxy to use for network traffic."
+  https_proxy: ""
+  #@schema/desc "The HTTP proxy to use for network traffic."
+  http_proxy: ""
+  #@schema/desc "A comma-separated list of hostnames, IP addresses, or IP ranges in CIDR format that should not use the proxy."
+  no_proxy: ""
+
+#@schema/desc "Settings for the PostgreSQL database."
+postgresql:
+  #@schema/desc "Number of instances for the PostgreSQL database cluster. Define at least 3 for production scenarios."
+  #@schema/validation min=1
+  instances: 1
+  #@schema/desc "Storage configuration for each PostgreSQL instance."
+  storage:
+    #@schema/desc "Size of the PersistenceVolume to create for each PostgreSQL instance."
+    size: 1Gi

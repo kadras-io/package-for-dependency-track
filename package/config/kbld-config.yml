@@ -1,0 +1,17 @@
+#@ load("@ytt:data", "data")
+
+#@ version = "4.11.7"
+
+---
+apiVersion: kbld.k14s.io/v1alpha1
+kind: Config
+
+#! After kbld searches for container image references, it applies a set of “overrides”
+#! which effectively rewrite those references. It does this before attempting to build
+#! the corresponding image or resolve it to a digest reference.
+#! See more about the overrides: https://carvel.dev/kbld/docs/latest/config/#overrides.
+overrides:
+  - image: docker.io/dependencytrack/apiserver:latest
+    newImage: #@ "docker.io/dependencytrack/apiserver:{}".format(version)
+  - image: docker.io/dependencytrack/frontend:latest
+    newImage: #@ "docker.io/dependencytrack/frontend:{}".format(version)

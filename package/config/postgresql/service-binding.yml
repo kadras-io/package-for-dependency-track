@@ -1,0 +1,21 @@
+---
+apiVersion: secretgen.carvel.dev/v1alpha1
+kind: SecretTemplate
+metadata:
+  name: dependency-track-postgresql-credentials
+  namespace: dependency-track
+spec:
+  inputResources:
+    - name: pg
+      ref:
+        apiVersion: v1
+        kind: Secret
+        name: postgresql-dependency-track-app
+  template:
+    type: servicebinding.io/postgresql
+    data:
+      username: $(.pg.data.username)
+      password: $(.pg.data.password)
+      jdbc-url: $(.pg.data.jdbc-uri)
+    stringData:
+      type: "postgresql"

@@ -1,0 +1,6 @@
+---
+apiVersion: kuttl.dev/v1beta1
+kind: TestAssert
+commands:
+  - script: |
+      curl --fail-with-body dependency-track.127.0.0.1.sslip.io/login

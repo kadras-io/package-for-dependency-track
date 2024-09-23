@@ -1,0 +1,9 @@
+#@ load("@ytt:overlay", "overlay")
+
+#@overlay/match by=overlay.subset({"metadata":{"name":"dependency-track"}, "kind":"PackageInstall"})
+---
+spec:
+  #@overlay/match missing_ok=True
+  values:
+    - secretRef:
+        name: dependency-track-values

@@ -1,0 +1,87 @@
+#@ load("@ytt:data", "data")
+
+#@ def labels():
+app.kubernetes.io/part-of: dependency-track
+app.kubernetes.io/instance: dependency-track
+app.kubernetes.io/name: dependency-track-frontend
+app.kubernetes.io/component: frontend
+#@ end
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dependency-track-frontend
+  namespace: dependency-track
+  labels: #@ labels()
+spec:
+  type: "ClusterIP"
+  ports:
+  - name: web
+    port: 8080
+    targetPort: web
+  selector: #@ labels()
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dependency-track-frontend
+  namespace: dependency-track
+  labels: #@ labels()
+spec:
+  replicas: #@ data.values.frontend.replicas
+  selector:
+    matchLabels: #@ labels()
+  template:
+    metadata:
+      labels: #@ labels()
+    spec:
+      serviceAccount: dependency-track
+      containers:
+      - name: dependency-track-frontend
+        image: docker.io/dependencytrack/frontend
+        imagePullPolicy: IfNotPresent
+        securityContext: 
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: false
+          runAsNonRoot: true
+          seccompProfile:
+            type: RuntimeDefault
+        resources: #@ data.values.frontend.resources
+        #! env:
+        #! - name: API_BASE_URL
+        #!   value: #@ data.values.domain_name
+        ports:
+        - name: web
+          containerPort: 8080
+          protocol: TCP
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+        livenessProbe:
+          httpGet:
+            scheme: HTTP
+            port: web
+            path: /
+          failureThreshold: 3
+          initialDelaySeconds: 5
+          periodSeconds: 15
+          successThreshold: 1
+          timeoutSeconds: 5
+        readinessProbe:
+          httpGet:
+            scheme: HTTP
+            port: web
+            path: /
+          failureThreshold: 3
+          initialDelaySeconds: 5
+          periodSeconds: 15
+          successThreshold: 1
+          timeoutSeconds: 5
+      volumes:
+      - name: tmp
+        emptyDir: { }

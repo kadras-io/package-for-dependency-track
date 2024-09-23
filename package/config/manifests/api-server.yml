@@ -1,0 +1,188 @@
+#@ load("@ytt:data", "data")
+
+#@ def labels():
+app.kubernetes.io/part-of: dependency-track
+app.kubernetes.io/instance: dependency-track
+app.kubernetes.io/name: dependency-track-api-server
+app.kubernetes.io/component: api-server
+#@ end
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dependency-track-api-server
+  namespace: dependency-track
+  labels: #@ labels()
+spec:
+  type: "ClusterIP"
+  ports:
+  - name: web
+    port: 8080
+    targetPort: web
+  selector: #@ labels()
+    
+#@ data_directory_volume = "data"
+#@ data_directory_path = "/data"
+#@ encryption_key_path = "/etc/secrets/secret.key"
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: dependency-track-api-server
+  namespace: dependency-track
+  labels: #@ labels()
+  annotations:
+    kapp.k14s.io/change-group: dependency-track
+    kapp.k14s.io/change-rule.dependency-track: upsert after upserting postgresql
+spec:
+  serviceName: dependency-track-api-server
+  replicas: 1
+  selector:
+    matchLabels: #@ labels()
+  template:
+    metadata:
+      labels: #@ labels()
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: /metrics
+    spec:
+      serviceAccount: dependency-track
+      securityContext:
+        fsGroup: 1000
+      initContainers:
+      - name: fix-permissions
+        image: docker.io/library/busybox
+        command:
+        - sh
+        - -c
+        #@yaml/text-templated-strings
+        - |
+          chown -R 1000:1000 (@= data_directory_path @)
+        volumeMounts:
+        - name: #@ data_directory_volume
+          mountPath: #@ data_directory_path
+        securityContext:
+          capabilities:
+            add:
+            - CHOWN
+          runAsNonRoot: false
+          runAsUser: 0
+          seccompProfile:
+            type: RuntimeDefault
+      containers:
+      - name: dependency-track-api-server
+        image: docker.io/dependencytrack/apiserver
+        imagePullPolicy: IfNotPresent
+        securityContext: 
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          seccompProfile:
+            type: RuntimeDefault
+        resources: #@ data.values.api_server.resources
+        env:
+        - name: ALPINE_DATA_DIRECTORY
+          value: #@ data_directory_path
+        - name: ALPINE_DATABASE_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: dependency-track-postgresql-credentials
+              key: username
+        - name: ALPINE_DATABASE_PASSWORD_FILE
+          value: "/etc/secrets/postgresql-credentials/password"
+        - name: ALPINE_DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: dependency-track-postgresql-credentials
+              key: jdbc-url
+        - name: ALPINE_SECRET_KEY_PATH
+          value: #@ encryption_key_path
+        - name: EXTRA_JAVA_OPTIONS
+          value: "-Dalpine.application.properties=/etc/config/application.properties"
+        - name: LOGGING_CONFIG_PATH
+          value: "/etc/config/logback.xml"
+        - name: LOGGING_LEVEL
+          value: #@ data.values.api_server.logging.level
+        #@ if/end data.values.proxy.http_proxy != "":
+        - name: HTTP_PROXY
+          value: #@ data.values.proxy.http_proxy
+        #@ if/end data.values.proxy.https_proxy != "":
+        - name: HTTPS_PROXY
+          value: #@ data.values.proxy.https_proxy
+        #@ if/end data.values.proxy.no_proxy != "":
+        - name: NO_PROXY
+          value: #@ data.values.proxy.no_proxy
+        - name: SYSTEM_REQUIREMENT_CHECK_ENABLED
+          value: #@ str(data.values.system_requirement_check).lower()
+        ports:
+        - name: web
+          containerPort: 8080
+          protocol: TCP
+        volumeMounts:
+        - name: #@ data_directory_volume
+          mountPath: #@ data_directory_path
+        - name: tmp
+          mountPath: /tmp
+        - name: app-config
+          mountPath: "/etc/config/application.properties"
+          subPath: "application.properties"
+          readOnly: true
+        - name: app-config
+          mountPath: "/etc/config/logback.xml"
+          subPath: "logback.xml"
+          readOnly: true
+        - name: encryption-key
+          mountPath: #@ encryption_key_path
+          subPath: encryption-key
+          readOnly: true
+        - name: postgresql-credentials
+          mountPath: /etc/secrets/postgresql-credentials
+          readOnly: true
+        livenessProbe:
+          httpGet:
+            scheme: HTTP
+            port: web
+            path: /health/live
+          failureThreshold: 3
+          initialDelaySeconds: 10
+          periodSeconds: 15
+          successThreshold: 1
+          timeoutSeconds: 5
+        readinessProbe:
+          httpGet:
+            scheme: HTTP
+            port: web
+            path: /health/ready
+          failureThreshold: 3
+          initialDelaySeconds: 10
+          periodSeconds: 15
+          successThreshold: 1
+          timeoutSeconds: 5
+      volumes:
+      - name: tmp
+        emptyDir: { }
+      - name: app-config
+        configMap:
+          name: dependency-track-app-config
+      - name: encryption-key
+        secret:
+          secretName: dependency-track-encryption-key
+      - name: postgresql-credentials
+        secret:
+          secretName: dependency-track-postgresql-credentials
+  volumeClaimTemplates:
+  - metadata:
+      name: #@ data_directory_volume
+    spec:
+      #@ if/end data.values.api_server.storage.class_name != "":
+      storageClassName: #@ data.values.api_server.storage.class_name
+      resources:
+        requests:
+          storage: #@ data.values.api_server.storage.size
+      accessModes:
+      - ReadWriteOnce

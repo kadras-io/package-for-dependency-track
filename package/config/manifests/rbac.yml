@@ -1,0 +1,11 @@
+#@ load("@ytt:data", "data")
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: dependency-track
+  namespace: dependency-track
+  labels:
+    app.kubernetes.io/part-of: dependency-track
+automountServiceAccountToken: false

@@ -1,0 +1,68 @@
+#@ load("@ytt:data", "data")
+
+#@ def logback_encoder():
+#@ if data.values.api_server.logging.format == "console":
+#@   return "<encoder><pattern>%date %level [%logger{0}] %msg%n</pattern></encoder>"
+#@ elif data.values.api_server.logging.format == "json":
+#@   return "<encoder class=\"net.logstash.logback.encoder.LogstashEncoder\"/>"    
+#@ end
+#@ end
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dependency-track-app-config
+  namespace: dependency-track
+  annotations:
+    kapp.k14s.io/versioned: ""
+data:
+  #@yaml/text-templated-strings
+  application.properties: |
+    alpine.bcrypt.rounds=14
+
+    alpine.database.mode=external
+    alpine.database.driver=org.postgresql.Driver
+
+    alpine.database.pool.enabled=true
+    alpine.database.pool.max.size=20
+    alpine.database.pool.min.idle=10
+    alpine.database.pool.idle.timeout=30000
+    alpine.database.pool.max.lifetime=60000
+
+    alpine.http.timeout.connection=30
+    alpine.http.timeout.socket=30
+    alpine.http.timeout.pool=60
+
+    alpine.metrics.enabled=(@= str(data.values.api_server.metrics.enabled).lower() @)
+    alpine.metrics.auth.username=
+    alpine.metrics.auth.password=
+
+    alpine.worker.pool.drain.timeout.duration=PT15S
+  
+  #@yaml/text-templated-strings
+  logback.xml: |
+    <?xml version="1.0" encoding="UTF-8"?>
+    <configuration scan="true">
+
+        <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+            (@= logback_encoder() @)
+        </appender>
+
+        <logger name="alpine" level="${dependencyTrack.logging.level:-INFO}" additivity="false">
+            <appender-ref ref="STDOUT" />
+        </logger>
+
+        <logger name="org.dependencytrack" level="${dependencyTrack.logging.level:-INFO}" additivity="false">
+            <appender-ref ref="STDOUT" />
+        </logger>
+
+        <logger name="org.eclipse.jetty" level="${dependencyTrack.logging.level:-INFO}" additivity="false">
+            <appender-ref ref="STDOUT" />
+        </logger>
+
+        <root level="WARN">
+            <appender-ref ref="STDOUT" />
+        </root>
+
+    </configuration>

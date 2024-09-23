@@ -1,0 +1,49 @@
+#@ load("@ytt:data", "data")
+
+#@ def labels():
+app.kubernetes.io/part-of: dependency-track
+app.kubernetes.io/instance: dependency-track
+app.kubernetes.io/name: dependency-track
+app.kubernetes.io/component: ingress
+#@ end
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: dependency-track
+  namespace: dependency-track
+  labels: #@ labels()
+  annotations:
+    cert-manager.io/cluster-issuer: #@ data.values.ingress_issuer
+spec:
+  ingressClassName: contour
+  rules:
+  - host: #@ data.values.domain_name
+    http:
+      paths:
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: dependency-track-api-server
+            port:
+              name: web
+      - path: /health
+        pathType: Prefix
+        backend:
+          service:
+            name: dependency-track-api-server
+            port:
+              name: web
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: dependency-track-frontend
+            port:
+              name: web
+  tls:
+  - hosts:
+      - #@ data.values.domain_name
+    secretName: dependency-track-tls-secret
