@@ -1,6 +1,6 @@
 #@ load("@ytt:data", "data")
 
-#@ version = "4.12.0"
+#@ version = "4.12.1"
 
 ---
 apiVersion: kbld.k14s.io/v1alpha1
