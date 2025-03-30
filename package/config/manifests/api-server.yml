@@ -119,8 +119,6 @@ spec:
           value: #@ data.values.proxy.no_proxy
         - name: SYSTEM_REQUIREMENT_CHECK_ENABLED
           value: #@ str(data.values.system_requirement_check).lower()
-        - name: JAVA_TOOL_OPTIONS
-          value: "-XX:UseSVE=0"
         ports:
         - name: web
           containerPort: 8080
