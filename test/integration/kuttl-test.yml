@@ -22,8 +22,8 @@ commands:
   - script: |
       kubectl config set-context --current --namespace=tests && \
       kapp deploy -a cert-manager-package -y \
-        -f https://github.com/kadras-io/package-for-cert-manager/releases/download/v1.19.2/package.yml \
-        -f https://github.com/kadras-io/package-for-cert-manager/releases/download/v1.19.2/metadata.yml
+        -f https://github.com/kadras-io/package-for-cert-manager/releases/download/v1.19.3/package.yml \
+        -f https://github.com/kadras-io/package-for-cert-manager/releases/download/v1.19.3/metadata.yml
   - script: |
       kubectl config set-context --current --namespace=tests && \
       kapp deploy -a contour-package -y \
@@ -32,8 +32,8 @@ commands:
   - script: |
       kubectl config set-context --current --namespace=tests && \
       kapp deploy -a postgresql-operator-package -y \
-        -f https://github.com/kadras-io/package-for-postgresql-operator/releases/download/v1.28.0/package.yml \
-        -f https://github.com/kadras-io/package-for-postgresql-operator/releases/download/v1.28.0/metadata.yml
+        -f https://github.com/kadras-io/package-for-postgresql-operator/releases/download/v1.28.1/package.yml \
+        -f https://github.com/kadras-io/package-for-postgresql-operator/releases/download/v1.28.1/metadata.yml
   - script: |
       kubectl config set-context --current --namespace=tests && \
       kapp deploy -a dependencies -y -f ./test/setup/dependencies
