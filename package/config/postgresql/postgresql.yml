@@ -8,7 +8,7 @@ metadata:
   annotations:
     kapp.k14s.io/change-group: postgresql
 spec:
-  imageName: ghcr.io/cloudnative-pg/postgresql:17.5
+  imageName: ghcr.io/cloudnative-pg/postgresql:18.2
   instances: #@ data.values.postgresql.instances
   storage:
     size: #@ data.values.postgresql.storage.size

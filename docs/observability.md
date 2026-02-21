@@ -28,6 +28,18 @@ api_server:
 
 For more information, check the Dependency Track documentation for [metrics](https://docs.dependencytrack.org/getting-started/monitoring/#metrics).
 
+The PostgreSQL database used by Dependency Track also exposes metrics that can be scraped by Prometheus. This package comes pre-configured with the necessary annotations to let Prometheus scrape metrics automatically from the PostgreSQL database.
+
+If you need, you can always disable the generation of Prometheus metrics for the PostgreSQL database.
+
+```yaml
+postgresql:
+  metrics:
+    enabled: false
+```
+
+You can refer to the [CloudNativePG documentation](https://cloudnative-pg.io/docs/devel/monitoring/) for more information on how to configure and use these metrics.
+
 ## Dashboards
 
-If you use the Grafana observability stack, you can refer to this [dashboard](https://docs.dependencytrack.org/getting-started/monitoring/#metrics) as a foundation to build your own.
+If you use the Grafana observability stack, you can refer to this [dashboard](https://docs.dependencytrack.org/getting-started/monitoring/) as a foundation to build your own.

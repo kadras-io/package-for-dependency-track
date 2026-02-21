@@ -1,0 +1,26 @@
+#@ load("@ytt:data", "data")
+#@ load("@ytt:overlay", "overlay")
+
+#@ if data.values.api_server.metrics.enabled:
+#@overlay/match by=overlay.subset({"kind":"StatefulSet","metadata":{"name":"dependency-track-api-server"}})
+---
+spec:
+  template:
+    #@overlay/match-child-defaults missing_ok=True
+    metadata:
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: "/metrics"
+#@ end
+
+#@ if data.values.postgresql.metrics.enabled:
+#@overlay/match by=overlay.subset({"kind":"Cluster","metadata":{"name":"postgresql-dependency-track"}})
+---
+spec:
+  #@overlay/match-child-defaults missing_ok=True
+  inheritedMetadata:
+    annotations:
+      prometheus.io/scrape: "true"
+      prometheus.io/path: "/metrics"
+      prometheus.io/port: "metrics"
+#@ end

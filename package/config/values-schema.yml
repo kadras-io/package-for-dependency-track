@@ -78,6 +78,10 @@ postgresql:
   #@schema/desc "Number of instances for the PostgreSQL database cluster. Define at least 3 for production scenarios."
   #@schema/validation min=1
   instances: 1
+  #@schema/desc "Settings for metrics."
+  metrics:
+    #@schema/desc "Whether to enable the generation of Prometheus metrics."
+    enabled: true
   #@schema/desc "Storage configuration for each PostgreSQL instance."
   storage:
     #@schema/desc "Size of the PersistenceVolume to create for each PostgreSQL instance."

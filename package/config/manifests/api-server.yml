@@ -44,9 +44,6 @@ spec:
   template:
     metadata:
       labels: #@ labels()
-      annotations:
-        prometheus.io/scrape: "true"
-        prometheus.io/path: /metrics
     spec:
       serviceAccount: dependency-track
       securityContext:

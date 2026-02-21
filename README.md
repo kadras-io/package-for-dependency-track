@@ -119,22 +119,22 @@ Settings for the API Server component.
 | `api_server.logging.level` | `info` | Log verbosity level. Options: `trace`, `debug`, `info`, `warn`, `error`. |
 | `api_server.logging.format` | `console` | Log encoding format. Options: `console`, `json`. |
 | `api_server.metrics.enabled` | `true` | Whether to enable the generation of Prometheus metrics. |
-| `api_server.resources.cpu` | `0.5` | CPU requests configuration for the API Server component. |
-| `api_server.resources.memory` | `5Gi` | Memory requests configuration for the API Server component. |
-| `api_server.limits.cpu` | `4` | CPU limits configuration for the API Server component. |
-| `api_server.limits.memory` | `5Gi` | Memory limits configuration for the API Server component. |
+| `api_server.resources.requests.cpu` | `0.5` | CPU requests configuration for the API Server component. |
+| `api_server.resources.requests.memory` | `5Gi` | Memory requests configuration for the API Server component. |
+| `api_server.resources.limits.cpu` | `4` | CPU limits configuration for the API Server component. |
+| `api_server.resources.limits.memory` | `5Gi` | Memory limits configuration for the API Server component. |
 | `api_server.storage.class_name` | `""` | Class name for the PersistenceVolume to create. |
-| `api_server.storage.size` | `500Mi` | Size of the PersistenceVolume to create. |
+| `api_server.storage.size` | `1Gi` | Size of the PersistenceVolume to create. |
 
 Settings for the Frontend component.
 
 | Config | Default | Description |
 |-------|-------------------|-------------|
 | `frontend.replicas` | `1` | The number of Frontend replicas. In order to enable high availability, it should be greater than 1. |
-| `frontend.resources.cpu` | `0.5` | CPU requests configuration for the Frontend component. |
-| `frontend.resources.memory` | `5Gi` | Memory requests configuration for the Frontend component. |
-| `frontend.limits.cpu` | `4` | CPU limits configuration for the Frontend component. |
-| `frontend.limits.memory` | `5Gi` | Memory limits configuration for the Frontend component. |
+| `frontend.resources.requests.cpu` | `150m` | CPU requests configuration for the Frontend component. |
+| `frontend.resources.requests.memory` | `64Mi` | Memory requests configuration for the Frontend component. |
+| `frontend.resources.limits.cpu` | `500m` | CPU limits configuration for the Frontend component. |
+| `frontend.resources.limits.memory` | `128Mi` | Memory limits configuration for the Frontend component. |
 
 Settings for the corporate proxy.
 
@@ -149,7 +149,8 @@ Settings for the PostgreSQL database.
 | Config | Default | Description |
 |-------|-------------------|-------------|
 | `postgresql.instances` | `1` | Number of instances for the PostgreSQL database cluster. Define at least 3 for production scenarios. |
-| `postgresql.storage.size` | `500Mi` | Size of the PersistenceVolume to create for each PostgreSQL instance. |
+| `postgresql.metrics.enabled` | `true` | Whether to enable the generation of Prometheus metrics. |
+| `postgresql.storage.size` | `1Gi` | Size of the PersistenceVolume to create for each PostgreSQL instance. |
 
 </details>
 
