@@ -16,8 +16,8 @@ spec:
 #@ if data.values.postgresql.metrics.enabled:
 #@overlay/match by=overlay.subset({"kind":"Cluster","metadata":{"name":"postgresql-dependency-track"}})
 ---
+#@overlay/match-child-defaults missing_ok=True
 spec:
-  #@overlay/match-child-defaults missing_ok=True
   inheritedMetadata:
     annotations:
       prometheus.io/scrape: "true"
