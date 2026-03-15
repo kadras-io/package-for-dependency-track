@@ -6,7 +6,7 @@
 [![The Apache 2.0 license badge](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Follow us on Bluesky](https://img.shields.io/static/v1?label=Bluesky&message=Follow&color=1DA1F2)](https://bsky.app/profile/kadras.bsky.social)
 
-A Carvel package for [Dependency Track](https://dependency-track.io), a continuous SBOM Analysis Platform for managing software supply chain security risks.
+A Carvel package for [Dependency Track](https://dependencytrack.org), a continuous SBOM Analysis Platform for managing software supply chain security risks.
 
 ## 🚀&nbsp; Getting Started
 
