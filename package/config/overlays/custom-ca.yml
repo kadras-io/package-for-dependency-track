@@ -1,0 +1,100 @@
+#@ load("@ytt:data", "data")
+#@ load("@ytt:overlay", "overlay")
+#@ load("/manifests/config.star", "api_server_image_repository", "image_reference")
+
+#! The Java runtime bundled in the Dependency Track container image trusts only well-known
+#! public certificate authorities, and it doesn't read the operating system trust store.
+#! To trust an internal CA, its certificate must be imported into the JVM truststore, which
+#! is done by copying the default truststore into a volume, importing the certificate into
+#! the copy, and mounting the result over the original one.
+#! https://dependencytrack.github.io/docs/next/guides/administration/configuring-internal-ca
+
+#@ ca_certs_secret_name = "dependency-track-ca-certs"
+#@ ca_certs_directory = "/etc/dt/ca-certificates"
+#@ truststore_directory = "/var/dt/truststore"
+#@ java_home = "/opt/java/openjdk"
+
+#@ if data.values.ca_cert_data:
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: #@ ca_certs_secret_name
+  namespace: dependency-track
+  #! A new Secret is created whenever the certificates change, so that the API Server
+  #! is rolled out and re-imports them into the truststore.
+  annotations:
+    kapp.k14s.io/versioned: ""
+stringData:
+  #@yaml/text-templated-strings
+  ca.crt: |
+    (@= data.values.ca_cert_data @)
+
+#@overlay/match by=overlay.subset({"kind":"Deployment", "metadata":{"name":"dependency-track-api-server"}})
+---
+spec:
+  template:
+    spec:
+      #@overlay/match missing_ok=True
+      initContainers:
+        - name: import-ca-certificates
+          image: #@ image_reference(api_server_image_repository, data.values.image.tag)
+          imagePullPolicy: IfNotPresent
+          command:
+            - sh
+            - -c
+            #@yaml/text-templated-strings
+            - |
+              set -eu
+              cd "(@= truststore_directory @)"
+              cp "(@= java_home @)/lib/security/cacerts" ./cacerts
+              # A PEM bundle may hold more than one certificate, while keytool imports
+              # a single certificate per invocation. Split the bundle first.
+              awk '/BEGIN CERT/ { count++ } count > 0 { print > ("ca-" count ".pem") }' \
+                "(@= ca_certs_directory @)/ca.crt"
+              for certificate in ./ca-*.pem; do
+                echo "Importing certificate $certificate into the Java truststore"
+                "(@= java_home @)/bin/keytool" -importcert -noprompt -trustcacerts \
+                  -keystore ./cacerts -storepass changeit \
+                  -alias "$(basename "$certificate" .pem)" -file "$certificate"
+              done
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              memory: "128Mi"
+          volumeMounts:
+            - name: truststore
+              mountPath: #@ truststore_directory
+            - name: ca-certs
+              mountPath: #@ ca_certs_directory
+              readOnly: true
+      containers:
+        #@overlay/match by="name"
+        - name: dependency-track-api-server
+          volumeMounts:
+            #@overlay/append
+            - name: truststore
+              mountPath: #@ java_home + "/lib/security/cacerts"
+              subPath: cacerts
+              readOnly: true
+      volumes:
+        #@overlay/append
+        - name: truststore
+          emptyDir: { }
+        #@overlay/append
+        - name: ca-certs
+          secret:
+            secretName: #@ ca_certs_secret_name
+#@ end

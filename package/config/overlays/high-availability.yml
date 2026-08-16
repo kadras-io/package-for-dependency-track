@@ -1,0 +1,52 @@
+#@ load("@ytt:data", "data")
+
+#! A PodDisruptionBudget is only meaningful when more than one replica is running.
+#! With a single replica, it would block voluntary disruptions such as node drains.
+
+#! API SERVER
+
+#@ if data.values.api_server.replicas > 1:
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: dependency-track-api-server
+  namespace: dependency-track
+  labels:
+    app.kubernetes.io/part-of: dependency-track
+    app.kubernetes.io/instance: dependency-track
+    app.kubernetes.io/name: dependency-track-api-server
+    app.kubernetes.io/component: api-server
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/part-of: dependency-track
+      app.kubernetes.io/instance: dependency-track
+      app.kubernetes.io/name: dependency-track-api-server
+      app.kubernetes.io/component: api-server
+#@ end
+
+#! FRONTEND
+
+#@ if data.values.frontend.replicas > 1:
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: dependency-track-frontend
+  namespace: dependency-track
+  labels:
+    app.kubernetes.io/part-of: dependency-track
+    app.kubernetes.io/instance: dependency-track
+    app.kubernetes.io/name: dependency-track-frontend
+    app.kubernetes.io/component: frontend
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/part-of: dependency-track
+      app.kubernetes.io/instance: dependency-track
+      app.kubernetes.io/name: dependency-track-frontend
+      app.kubernetes.io/component: frontend
+#@ end

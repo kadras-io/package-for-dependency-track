@@ -6,7 +6,6 @@ metadata:
   namespace: tests
 stringData:
   values.yaml: |
-    system_requirement_check: false
     domain_name: "dependency-track.127.0.0.1.sslip.io"
     ingress_issuer: "kadras-ca-issuer"
     api_server:

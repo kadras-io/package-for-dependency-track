@@ -76,7 +76,7 @@ Verify the installed packages and their status:
 ## 📙&nbsp; Documentation
 
 Documentation, tutorials and examples for this package are available in the [docs](docs) folder.
-For documentation specific to Dependency Track, check out [dependencytrack.org](https://docs.dependencytrack.org/).
+For documentation specific to Dependency Track, check out [dependencytrack.org](https://dependencytrack.github.io/docs/).
 
 ## 🎯&nbsp; Configuration
 
@@ -107,7 +107,8 @@ The Dependency Track package has the following configurable properties.
 
 | Config | Default | Description |
 |-------|-------------------|-------------|
-| `system_requirement_check` | `true` | Whether Dependency Track will check for memory and CPU requirements at startup time. |
+| `ca_cert_data` | `""` | PEM-encoded certificate data to trust TLS connections with a custom CA. It's imported into the Java truststore used by the API Server. |
+| `image.tag` | `""` | The tag to use for the API Server and Frontend container images, overriding the Dependency Track version bundled with this package. The images must be available in a container registry reachable from the cluster, since they are not part of the package bundle. |
 | `domain_name` | `""` | Domain name for Dependency Track. It must be a valid DNS name. |
 | `ingress_issuer` | `""` | A reference to the ClusterIssuer to use for enabling TLS in Dependency Track. |
 
@@ -116,6 +117,7 @@ Settings for the API Server component.
 
 | Config | Default | Description |
 |-------|-------------------|-------------|
+| `api_server.replicas` | `1` | The number of API Server replicas. Values greater than 1 require a storage class supporting the `ReadWriteMany` access mode. |
 | `api_server.logging.level` | `info` | Log verbosity level. Options: `trace`, `debug`, `info`, `warn`, `error`. |
 | `api_server.logging.format` | `console` | Log encoding format. Options: `console`, `json`. |
 | `api_server.metrics.enabled` | `true` | Whether to enable the generation of Prometheus metrics. |
@@ -125,24 +127,27 @@ Settings for the API Server component.
 | `api_server.resources.limits.memory` | `5Gi` | Memory limits configuration for the API Server component. |
 | `api_server.storage.class_name` | `""` | Class name for the PersistenceVolume to create. |
 | `api_server.storage.size` | `1Gi` | Size of the PersistenceVolume to create. |
+| `api_server.storage.access_modes` | `["ReadWriteOnce"]` | Access modes for the PersistenceVolume to create. `ReadWriteMany` is required when running more than one API Server replica. |
+| `api_server.config` | `{}` | Additional configuration properties for the API Server, appended to the `application.properties` file and taking precedence over the ones managed by this package. See the [properties reference](https://dependencytrack.github.io/docs/next/reference/configuration/properties) for the full list. |
 
 Settings for the Frontend component.
 
 | Config | Default | Description |
 |-------|-------------------|-------------|
 | `frontend.replicas` | `1` | The number of Frontend replicas. In order to enable high availability, it should be greater than 1. |
+| `frontend.config` | `{}` | Configuration for the Frontend, provided as environment variables. Use it to enable OpenID Connect, or to point the Frontend at an API Server served from a different host via `API_BASE_URL`. |
 | `frontend.resources.requests.cpu` | `150m` | CPU requests configuration for the Frontend component. |
 | `frontend.resources.requests.memory` | `64Mi` | Memory requests configuration for the Frontend component. |
 | `frontend.resources.limits.cpu` | `500m` | CPU limits configuration for the Frontend component. |
 | `frontend.resources.limits.memory` | `128Mi` | Memory limits configuration for the Frontend component. |
 
-Settings for the corporate proxy.
+Settings for the corporate proxy used by the API Server when calling external services.
 
 | Config | Default | Description |
 |-------|-------------------|-------------|
-| `proxy.https_proxy` | `""` | The HTTPS proxy to use for network traffic. |
-| `proxy.http_proxy` | `""` | The HTTP proxy to use for network traffic. |
-| `proxy.no_proxy` | `""` | A comma-separated list of hostnames, IP addresses, or IP ranges in CIDR format that should not use the proxy. |
+| `proxy.https_proxy` | `""` | The HTTPS proxy to use for network traffic. It must be a plain HTTP URL in the form `http://[user[:password]@]host[:port]`. |
+| `proxy.http_proxy` | `""` | The HTTP proxy to use for network traffic. Used only when `https_proxy` is not configured. It must be a plain HTTP URL in the form `http://[user[:password]@]host[:port]`. |
+| `proxy.no_proxy` | `""` | A comma-separated list of hostnames or IP addresses, optionally with a port, that should not use the proxy. An entry matches the host exactly or any of its subdomains. CIDR ranges and leading-dot notation are not supported. |
 
 Settings for the PostgreSQL database.
 
@@ -151,6 +156,7 @@ Settings for the PostgreSQL database.
 | `postgresql.instances` | `1` | Number of instances for the PostgreSQL database cluster. Define at least 3 for production scenarios. |
 | `postgresql.metrics.enabled` | `true` | Whether to enable the generation of Prometheus metrics. |
 | `postgresql.storage.size` | `1Gi` | Size of the PersistenceVolume to create for each PostgreSQL instance. |
+| `postgresql.parameters` | `{}` | Configuration parameters for the PostgreSQL server, merged on top of the ones recommended by Dependency Track (`jit=off` and `wal_compression=zstd`). Remember that `max_connections` must cover the sum of the connection pools of all the API Server replicas, plus headroom for migrations, backups, and administrator sessions. |
 
 </details>
 

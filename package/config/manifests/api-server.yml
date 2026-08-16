@@ -1,4 +1,15 @@
 #@ load("@ytt:data", "data")
+#@ load("config.star",
+#@      "api_server_image_repository",
+#@      "config_directory",
+#@      "data_directory",
+#@      "management_port",
+#@      "postgresql_secret_directory",
+#@      "postgresql_secret_name",
+#@      "kek_secret_directory",
+#@      "kek_secret_name",
+#@      "kek_secret_key",
+#@      "image_reference")
 
 #@ def labels():
 app.kubernetes.io/part-of: dependency-track
@@ -6,6 +17,17 @@ app.kubernetes.io/instance: dependency-track
 app.kubernetes.io/name: dependency-track-api-server
 app.kubernetes.io/component: api-server
 #@ end
+
+#! The official container image bundles a Logback configuration producing JSON logs,
+#! which is enabled via a JVM system property.
+#@ def extra_java_options():
+#@   if data.values.api_server.logging.format == "json":
+#@     return "-Dlogback.configurationFile=logback-json.xml"
+#@   end
+#@   return ""
+#@ end
+
+#@ data_directory_volume = "data"
 
 ---
 apiVersion: v1
@@ -21,14 +43,25 @@ spec:
     port: 8080
     targetPort: web
   selector: #@ labels()
-    
-#@ data_directory_volume = "data"
-#@ data_directory_path = "/data"
-#@ encryption_key_path = "/etc/secrets/secret.key"
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: dependency-track-storage
+  namespace: dependency-track
+  labels: #@ labels()
+spec:
+  accessModes: #@ data.values.api_server.storage.access_modes
+  #@ if/end data.values.api_server.storage.class_name != "":
+  storageClassName: #@ data.values.api_server.storage.class_name
+  resources:
+    requests:
+      storage: #@ data.values.api_server.storage.size
 
 ---
 apiVersion: apps/v1
-kind: StatefulSet
+kind: Deployment
 metadata:
   name: dependency-track-api-server
   namespace: dependency-track
@@ -37,8 +70,14 @@ metadata:
     kapp.k14s.io/change-group: dependency-track
     kapp.k14s.io/change-rule.dependency-track: upsert after upserting postgresql
 spec:
-  serviceName: dependency-track-api-server
-  replicas: 1
+  replicas: #@ data.values.api_server.replicas
+  #! A new Pod is only created after the previous one has been terminated, so that a
+  #! ReadWriteOnce PersistentVolume can be handed over between rollouts.
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
   selector:
     matchLabels: #@ labels()
   template:
@@ -46,33 +85,16 @@ spec:
       labels: #@ labels()
     spec:
       serviceAccount: dependency-track
+      #! The container runs as UID 1000, which needs write access to the data directory.
       securityContext:
         fsGroup: 1000
-      initContainers:
-      - name: fix-permissions
-        image: docker.io/library/busybox
-        command:
-        - sh
-        - -c
-        #@yaml/text-templated-strings
-        - |
-          chown -R 1000:1000 (@= data_directory_path @)
-        volumeMounts:
-        - name: #@ data_directory_volume
-          mountPath: #@ data_directory_path
-        securityContext:
-          capabilities:
-            add:
-            - CHOWN
-          runAsNonRoot: false
-          runAsUser: 0
-          seccompProfile:
-            type: RuntimeDefault
+      #! Enough time for in-flight BOM uploads and background tasks to complete.
+      terminationGracePeriodSeconds: 120
       containers:
       - name: dependency-track-api-server
-        image: docker.io/dependencytrack/apiserver
+        image: #@ image_reference(api_server_image_repository, data.values.image.tag)
         imagePullPolicy: IfNotPresent
-        securityContext: 
+        securityContext:
           allowPrivilegeEscalation: false
           capabilities:
             drop:
@@ -83,67 +105,46 @@ spec:
             type: RuntimeDefault
         resources: #@ data.values.api_server.resources
         env:
-        - name: ALPINE_DATA_DIRECTORY
-          value: #@ data_directory_path
-        - name: ALPINE_DATABASE_USERNAME
-          valueFrom:
-            secretKeyRef:
-              name: dependency-track-postgresql-credentials
-              key: username
-        - name: ALPINE_DATABASE_PASSWORD_FILE
-          value: "/etc/secrets/postgresql-credentials/password"
-        - name: ALPINE_DATABASE_URL
-          valueFrom:
-            secretKeyRef:
-              name: dependency-track-postgresql-credentials
-              key: jdbc-url
-        - name: ALPINE_SECRET_KEY_PATH
-          value: #@ encryption_key_path
         - name: EXTRA_JAVA_OPTIONS
-          value: "-Dalpine.application.properties=/etc/config/application.properties"
-        - name: LOGGING_CONFIG_PATH
-          value: "/etc/config/logback.xml"
-        - name: LOGGING_LEVEL
-          value: #@ data.values.api_server.logging.level
-        #@ if/end data.values.proxy.http_proxy != "":
-        - name: HTTP_PROXY
-          value: #@ data.values.proxy.http_proxy
-        #@ if/end data.values.proxy.https_proxy != "":
-        - name: HTTPS_PROXY
-          value: #@ data.values.proxy.https_proxy
-        #@ if/end data.values.proxy.no_proxy != "":
-        - name: NO_PROXY
-          value: #@ data.values.proxy.no_proxy
-        - name: SYSTEM_REQUIREMENT_CHECK_ENABLED
-          value: #@ str(data.values.system_requirement_check).lower()
+          value: #@ extra_java_options()
         ports:
         - name: web
           containerPort: 8080
           protocol: TCP
+        - name: management
+          containerPort: #@ management_port
+          protocol: TCP
         volumeMounts:
         - name: #@ data_directory_volume
-          mountPath: #@ data_directory_path
+          mountPath: #@ data_directory
         - name: tmp
           mountPath: /tmp
         - name: app-config
-          mountPath: "/etc/config/application.properties"
-          subPath: "application.properties"
-          readOnly: true
-        - name: app-config
-          mountPath: "/etc/config/logback.xml"
-          subPath: "logback.xml"
-          readOnly: true
-        - name: encryption-key
-          mountPath: #@ encryption_key_path
-          subPath: encryption-key
+          mountPath: #@ config_directory
           readOnly: true
         - name: postgresql-credentials
-          mountPath: /etc/secrets/postgresql-credentials
+          mountPath: #@ postgresql_secret_directory
           readOnly: true
+        - name: encryption-key
+          mountPath: #@ kek_secret_directory
+          readOnly: true
+        #! The startup probe budget covers the database migrations and the seeding of
+        #! default objects, which run when the API Server starts for the first time
+        #! after an installation or an upgrade.
+        startupProbe:
+          httpGet:
+            scheme: HTTP
+            port: management
+            path: /health/started
+          failureThreshold: 60
+          initialDelaySeconds: 10
+          periodSeconds: 30
+          successThreshold: 1
+          timeoutSeconds: 5
         livenessProbe:
           httpGet:
             scheme: HTTP
-            port: web
+            port: management
             path: /health/live
           failureThreshold: 3
           initialDelaySeconds: 10
@@ -153,33 +154,35 @@ spec:
         readinessProbe:
           httpGet:
             scheme: HTTP
-            port: web
+            port: management
             path: /health/ready
           failureThreshold: 3
           initialDelaySeconds: 10
-          periodSeconds: 15
+          periodSeconds: 5
           successThreshold: 1
           timeoutSeconds: 5
       volumes:
+      - name: #@ data_directory_volume
+        persistentVolumeClaim:
+          claimName: dependency-track-storage
       - name: tmp
         emptyDir: { }
       - name: app-config
         configMap:
           name: dependency-track-app-config
-      - name: encryption-key
-        secret:
-          secretName: dependency-track-encryption-key
       - name: postgresql-credentials
         secret:
-          secretName: dependency-track-postgresql-credentials
-  volumeClaimTemplates:
-  - metadata:
-      name: #@ data_directory_volume
-    spec:
-      #@ if/end data.values.api_server.storage.class_name != "":
-      storageClassName: #@ data.values.api_server.storage.class_name
-      resources:
-        requests:
-          storage: #@ data.values.api_server.storage.size
-      accessModes:
-      - ReadWriteOnce
+          secretName: #@ postgresql_secret_name
+          defaultMode: 0444
+          items:
+          - key: username
+            path: username
+          - key: password
+            path: password
+      - name: encryption-key
+        secret:
+          secretName: #@ kek_secret_name
+          defaultMode: 0444
+          items:
+          - key: #@ kek_secret_key
+            path: #@ kek_secret_key

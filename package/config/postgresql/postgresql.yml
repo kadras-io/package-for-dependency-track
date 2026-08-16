@@ -1,4 +1,27 @@
 #@ load("@ytt:data", "data")
+#@ load("@ytt:struct", "struct")
+
+#! The default PostgreSQL configuration is intentionally conservative. These settings are
+#! recommended by Dependency Track for the workload it generates, and can be overridden or
+#! extended via the `postgresql.parameters` value.
+#! https://dependencytrack.github.io/docs/next/guides/administration/configuring-database
+
+#@ def postgresql_parameters():
+#@   parameters = {
+#!     Dependency Track's workload is dominated by short, latency-sensitive queries, where
+#!     just-in-time compilation costs more than it saves. PostgreSQL 19 changes the default
+#!     to `off` for the same reason.
+#@     "jit": "off",
+#!     Importing BOMs fills the write-ahead log quickly, making the database I/O bound.
+#!     Compressing the WAL trades a little CPU for significantly less I/O.
+#@     "wal_compression": "zstd",
+#@   }
+#@   for name, value in struct.decode(data.values.postgresql.parameters).items():
+#@     parameters[name] = str(value)
+#@   end
+#@   return parameters
+#@ end
+
 ---
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
@@ -8,7 +31,9 @@ metadata:
   annotations:
     kapp.k14s.io/change-group: postgresql
 spec:
-  imageName: ghcr.io/cloudnative-pg/postgresql:18.2
+  imageName: ghcr.io/cloudnative-pg/postgresql:18.4
   instances: #@ data.values.postgresql.instances
   storage:
     size: #@ data.values.postgresql.storage.size
+  postgresql:
+    parameters: #@ postgresql_parameters()

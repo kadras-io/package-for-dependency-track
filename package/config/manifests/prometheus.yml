@@ -1,8 +1,9 @@
 #@ load("@ytt:data", "data")
 #@ load("@ytt:overlay", "overlay")
+#@ load("config.star", "management_port")
 
 #@ if data.values.api_server.metrics.enabled:
-#@overlay/match by=overlay.subset({"kind":"StatefulSet","metadata":{"name":"dependency-track-api-server"}})
+#@overlay/match by=overlay.subset({"kind":"Deployment","metadata":{"name":"dependency-track-api-server"}})
 ---
 spec:
   template:
@@ -11,6 +12,7 @@ spec:
       annotations:
         prometheus.io/scrape: "true"
         prometheus.io/path: "/metrics"
+        prometheus.io/port: #@ str(management_port)
 #@ end
 
 #@ if data.values.postgresql.metrics.enabled:

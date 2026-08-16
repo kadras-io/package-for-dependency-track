@@ -8,7 +8,9 @@ parallel: 1
 startKIND: true
 kindContext: integration
 kindNodeCache: true
-timeout: 180
+# The API Server runs the database migrations and seeds the default objects
+# the first time it starts, which takes a while.
+timeout: 600
 artifactsDir: /tmp/kuttl-artifacts
 commands:
   - script: |
@@ -33,7 +35,7 @@ commands:
       kubectl config set-context --current --namespace=tests && \
       kapp deploy -a postgresql-operator-package -y \
         -f https://github.com/kadras-io/package-for-postgresql-operator/releases/download/v1.30.0/package.yml \
-        -f https://github.com/kadras-io/package-for-postgresql-operator/releases/download/v1.230.0/metadata.yml
+        -f https://github.com/kadras-io/package-for-postgresql-operator/releases/download/v1.30.0/metadata.yml
   - script: |
       kubectl config set-context --current --namespace=tests && \
       kapp deploy -a dependencies -y -f ./test/setup/dependencies

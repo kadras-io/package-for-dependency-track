@@ -1,4 +1,21 @@
 #@ load("@ytt:data", "data")
+#@ load("@ytt:struct", "struct")
+#@ load("config.star", "frontend_image_repository", "image_reference")
+
+#! The Frontend is a static single-page application, entirely configured via environment
+#! variables that it renders into `/static/config.json` at startup.
+#@ def environment():
+#@   config = struct.decode(data.values.frontend.config)
+#@   variables = []
+#@   for name in sorted(config.keys()):
+#@     value = config[name]
+#@     if type(value) == "bool":
+#@       value = str(value).lower()
+#@     end
+#@     variables.append({"name": name, "value": str(value)})
+#@   end
+#@   return variables
+#@ end
 
 #@ def labels():
 app.kubernetes.io/part-of: dependency-track
@@ -40,7 +57,7 @@ spec:
       serviceAccount: dependency-track
       containers:
       - name: dependency-track-frontend
-        image: docker.io/dependencytrack/frontend
+        image: #@ image_reference(frontend_image_repository, data.values.image.tag)
         imagePullPolicy: IfNotPresent
         securityContext: 
           allowPrivilegeEscalation: false
@@ -52,9 +69,11 @@ spec:
           seccompProfile:
             type: RuntimeDefault
         resources: #@ data.values.frontend.resources
-        #! env:
-        #! - name: API_BASE_URL
-        #!   value: #@ data.values.domain_name
+        #! `API_BASE_URL` is intentionally left unset by default. The Ingress serves both the
+        #! Frontend and the API Server from the same host, so the Frontend can call the API
+        #! via relative URLs.
+        #@ if/end environment():
+        env: #@ environment()
         ports:
         - name: web
           containerPort: 8080
@@ -66,7 +85,7 @@ spec:
           httpGet:
             scheme: HTTP
             port: web
-            path: /
+            path: /static/config.json
           failureThreshold: 3
           initialDelaySeconds: 5
           periodSeconds: 15
@@ -76,7 +95,7 @@ spec:
           httpGet:
             scheme: HTTP
             port: web
-            path: /
+            path: /static/config.json
           failureThreshold: 3
           initialDelaySeconds: 5
           periodSeconds: 15

@@ -1,6 +1,6 @@
 #@ load("@ytt:data", "data")
 
-#@ version = "4.14.0"
+#@ version = "5.0.4"
 
 ---
 apiVersion: kbld.k14s.io/v1alpha1
@@ -10,8 +10,9 @@ kind: Config
 #! which effectively rewrite those references. It does this before attempting to build
 #! the corresponding image or resolve it to a digest reference.
 #! See more about the overrides: https://carvel.dev/kbld/docs/latest/config/#overrides.
+#! The image references in the manifests are untagged, so they must be matched as such.
 overrides:
-  - image: docker.io/dependencytrack/apiserver:latest
+  - image: docker.io/dependencytrack/apiserver
     newImage: #@ "docker.io/dependencytrack/apiserver:{}".format(version)
-  - image: docker.io/dependencytrack/frontend:latest
+  - image: docker.io/dependencytrack/frontend
     newImage: #@ "docker.io/dependencytrack/frontend:{}".format(version)

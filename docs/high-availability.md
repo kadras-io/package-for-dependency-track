@@ -8,8 +8,23 @@ frontend:
   replicas: 3
 ```
 
-The API Server component doesn't support horizontal scaling by design and it's therefore deployed
-as a StatefulSet with a single instance.
+Starting from Dependency Track 5, the API Server component is stateless and it's deployed as a
+Deployment that can be scaled horizontally. The only shared state left on disk is the file storage
+used for BOMs and other uploaded artifacts, which is backed by a PersistentVolume. By default, that
+volume is created with the `ReadWriteOnce` access mode, so a single replica is used.
+
+To run more than one API Server replica, the volume must be shared across Pods. Use a storage class
+supporting the `ReadWriteMany` access mode (such as EFS, Azure Files, or CephFS).
+
+```yaml
+api_server:
+  replicas: 3
+  storage:
+    class_name: efs-sc
+    access_modes: ["ReadWriteMany"]
+```
+
+When a component runs more than one replica, a `PodDisruptionBudget` is created for it, keeping at least one Pod available during voluntary disruptions such as node drains.
 
 The PostgreSQL database is deployed via the CloudNativePG Operator and supports a highly availability setup
 with one read/write instance and multiple read-only replicas.

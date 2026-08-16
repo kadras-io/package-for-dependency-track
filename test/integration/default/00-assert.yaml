@@ -11,19 +11,38 @@ status:
 apiVersion: v1
 kind: Secret
 metadata:
-  name: dependency-track-postgresql-credentials
+  name: postgresql-dependency-track-app
   namespace: dependency-track
-type: servicebinding.io/postgresql
+type: kubernetes.io/basic-auth
+
+# Key Encryption Key
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: dependency-track-kek
+  namespace: dependency-track
+type: Opaque
 
 # API Server
 ---
 apiVersion: apps/v1
-kind: StatefulSet
+kind: Deployment
 metadata:
   name: dependency-track-api-server
   namespace: dependency-track
+spec:
+  replicas: 1
 status:
   readyReplicas: 1
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: dependency-track-storage
+  namespace: dependency-track
+status:
+  phase: Bound
 
 # Frontend
 ---
@@ -35,7 +54,7 @@ metadata:
 spec:
   replicas: 1
 status:
-  readyReplicas: 1 
+  readyReplicas: 1
 
 # Image Pull Secret
 ---
@@ -51,16 +70,6 @@ type: kubernetes.io/dockerconfigjson
 ---
 apiVersion: apps/v1
 kind: Deployment
-metadata:
-  namespace: dependency-track
-spec:
-  template:
-    spec:
-      imagePullSecrets:
-        - name: canonical-registry-credentials
----
-apiVersion: apps/v1
-kind: StatefulSet
 metadata:
   namespace: dependency-track
 spec:

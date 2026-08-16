@@ -1,11 +1,70 @@
 #@ load("@ytt:data", "data")
+#@ load("@ytt:struct", "struct")
+#@ load("config.star",
+#@      "config_directory",
+#@      "data_directory",
+#@      "management_port",
+#@      "postgresql_database_name",
+#@      "postgresql_secret_directory",
+#@      "postgresql_service_name",
+#@      "kek_secret_directory",
+#@      "kek_secret_key")
 
-#@ def logback_encoder():
-#@ if data.values.api_server.logging.format == "console":
-#@   return "<encoder><pattern>%date %level [%logger{0}] %msg%n</pattern></encoder>"
-#@ elif data.values.api_server.logging.format == "json":
-#@   return "<encoder class=\"net.logstash.logback.encoder.LogstashEncoder\"/>"    
+#@ def jdbc_url():
+#@   host = "{}.dependency-track.svc.cluster.local".format(postgresql_service_name)
+#@   return "jdbc:postgresql://{}:5432/{}?reWriteBatchedInserts=true".format(host, postgresql_database_name)
 #@ end
+
+#! Booleans are rendered by Starlark as `True`/`False`, which Java properties don't understand.
+#@ def property_value(value):
+#@   if type(value) == "bool":
+#@     return str(value).lower()
+#@   end
+#@   return value
+#@ end
+
+#@ def application_properties():
+#@   level = data.values.api_server.logging.level.upper()
+#@   lines = [
+#@     "# This file is mounted at {}/application.properties.".format(config_directory),
+#@     "",
+#@     "dt.data-directory={}".format(data_directory),
+#@     "",
+#@     "# The database credentials are mounted as files and read once at startup.",
+#@     "dt.datasource.url={}".format(jdbc_url()),
+#@     "dt.datasource.username=${{file::{}/username}}".format(postgresql_secret_directory),
+#@     "dt.datasource.password=${{file::{}/password}}".format(postgresql_secret_directory),
+#@     "",
+#@     "# Secrets managed by Dependency Track (such as integration credentials) are stored",
+#@     "# encrypted in PostgreSQL, using the key encryption key (KEK) mounted as a file.",
+#@     "dt.secret-management.provider=database",
+#@     "dt.secret-management.database.kek=${{file::{}/{}}}".format(kek_secret_directory, kek_secret_key),
+#@     "dt.secret-management.database.kek-keyset.create-if-missing=false",
+#@     "",
+#@     "# BOMs and other uploaded artifacts are stored on the PersistentVolume",
+#@     "# mounted at the data directory.",
+#@     "dt.file-storage.provider=local",
+#@     "dt.file-storage.local.directory={}/storage".format(data_directory),
+#@     "",
+#@     "# Health probes and Prometheus metrics are exposed on the management port,",
+#@     "# which is only reachable from within the Pod.",
+#@     "dt.management.host=0.0.0.0",
+#@     "dt.management.port={}".format(management_port),
+#@     "dt.metrics.enabled={}".format(str(data.values.api_server.metrics.enabled).lower()),
+#@     "",
+#@     "dt.logging.level.\"alpine\"={}".format(level),
+#@     "dt.logging.level.\"org.dependencytrack\"={}".format(level),
+#@     "dt.logging.level.\"org.eclipse.jetty\"={}".format(level),
+#@   ]
+#@   extra_config = struct.decode(data.values.api_server.config)
+#@   if extra_config:
+#@     lines.append("")
+#@     lines.append("# Additional properties provided via the `api_server.config` value.")
+#@     for key in sorted(extra_config.keys()):
+#@       lines.append("{}={}".format(key, property_value(extra_config[key])))
+#@     end
+#@   end
+#@   return "\n".join(lines) + "\n"
 #@ end
 
 ---
@@ -17,52 +76,8 @@ metadata:
   annotations:
     kapp.k14s.io/versioned: ""
 data:
-  #@yaml/text-templated-strings
-  application.properties: |
-    alpine.bcrypt.rounds=14
-
-    alpine.database.mode=external
-    alpine.database.driver=org.postgresql.Driver
-
-    alpine.database.pool.enabled=true
-    alpine.database.pool.max.size=20
-    alpine.database.pool.min.idle=10
-    alpine.database.pool.idle.timeout=30000
-    alpine.database.pool.max.lifetime=60000
-
-    alpine.http.timeout.connection=30
-    alpine.http.timeout.socket=30
-    alpine.http.timeout.pool=60
-
-    alpine.metrics.enabled=(@= str(data.values.api_server.metrics.enabled).lower() @)
-    alpine.metrics.auth.username=
-    alpine.metrics.auth.password=
-
-    alpine.worker.pool.drain.timeout.duration=PT15S
-  
-  #@yaml/text-templated-strings
-  logback.xml: |
-    <?xml version="1.0" encoding="UTF-8"?>
-    <configuration scan="true">
-
-        <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-            (@= logback_encoder() @)
-        </appender>
-
-        <logger name="alpine" level="${dependencyTrack.logging.level:-INFO}" additivity="false">
-            <appender-ref ref="STDOUT" />
-        </logger>
-
-        <logger name="org.dependencytrack" level="${dependencyTrack.logging.level:-INFO}" additivity="false">
-            <appender-ref ref="STDOUT" />
-        </logger>
-
-        <logger name="org.eclipse.jetty" level="${dependencyTrack.logging.level:-INFO}" additivity="false">
-            <appender-ref ref="STDOUT" />
-        </logger>
-
-        <root level="WARN">
-            <appender-ref ref="STDOUT" />
-        </root>
-
-    </configuration>
+  #! Dependency Track loads additional properties from `${cwd}/config/application.properties`,
+  #! where `${cwd}` is the working directory of the official container image. Values defined
+  #! here can be overridden at runtime via environment variables, which take precedence.
+  #! https://dependencytrack.github.io/docs/next/reference/configuration/application
+  application.properties: #@ application_properties()

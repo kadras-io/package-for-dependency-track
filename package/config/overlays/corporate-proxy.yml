@@ -1,0 +1,29 @@
+#@ load("@ytt:data", "data")
+#@ load("@ytt:overlay", "overlay")
+
+#! The API Server routes its outbound calls (vulnerability data sources, package repositories,
+#! OIDC discovery, webhooks) through the proxy configured via the standard environment variables.
+#! The Frontend is a static single-page app, so its requests originate from the user's browser
+#! and are not affected by this configuration.
+
+#@overlay/match by=overlay.subset({"kind":"Deployment", "metadata":{"name":"dependency-track-api-server"}})
+---
+spec:
+  template:
+    spec:
+      containers:
+        #@overlay/match by="name"
+        - name: dependency-track-api-server
+          env:
+          #@ if/end data.values.proxy.http_proxy != "":
+          #@overlay/append
+          - name: HTTP_PROXY
+            value: #@ data.values.proxy.http_proxy
+          #@ if/end data.values.proxy.https_proxy != "":
+          #@overlay/append
+          - name: HTTPS_PROXY
+            value: #@ data.values.proxy.https_proxy
+          #@ if/end data.values.proxy.no_proxy != "":
+          #@overlay/append
+          - name: NO_PROXY
+            value: #@ data.values.proxy.no_proxy

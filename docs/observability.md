@@ -12,11 +12,18 @@ api_server:
     level: info
 ```
 
-For more information, check the Dependency Track documentation for [logs](https://docs.dependencytrack.org/getting-started/monitoring/#logging).
+Logs are printed to the console in a human-readable format. If you collect logs with a
+structured logging pipeline, you can switch the format to JSON.
+
+```yaml
+api_server:
+  logging:
+    format: json
+```
 
 ## Metrics
 
-The Dependency Track API Server exposes Prometheus metrics by default. This package comes pre-configured with the necessary annotations to let Prometheus scrape metrics automatically from Dependency Track.
+The Dependency Track API Server exposes Prometheus metrics by default on its management port (`9000`), which is only reachable from within the Pod. This package comes pre-configured with the necessary annotations to let Prometheus scrape metrics automatically from Dependency Track.
 
 If you need, you can always disable the generation of Prometheus metrics.
 
@@ -26,7 +33,7 @@ api_server:
     enabled: false
 ```
 
-For more information, check the Dependency Track documentation for [metrics](https://docs.dependencytrack.org/getting-started/monitoring/#metrics).
+For more information, check the Dependency Track documentation for [metrics](https://dependencytrack.github.io/docs/next/reference/configuration/properties/).
 
 The PostgreSQL database used by Dependency Track also exposes metrics that can be scraped by Prometheus. This package comes pre-configured with the necessary annotations to let Prometheus scrape metrics automatically from the PostgreSQL database.
 
@@ -40,6 +47,6 @@ postgresql:
 
 You can refer to the [CloudNativePG documentation](https://cloudnative-pg.io/docs/devel/monitoring/) for more information on how to configure and use these metrics.
 
-## Dashboards
+## Health
 
-If you use the Grafana observability stack, you can refer to this [dashboard](https://docs.dependencytrack.org/getting-started/monitoring/) as a foundation to build your own.
+The API Server exposes the `/health/started`, `/health/live`, and `/health/ready` endpoints on its management port (`9000`). They are used by the Kubernetes probes and are not exposed via the Ingress.
