@@ -1,0 +1,17 @@
+---
+domain_name: dependency-track.kadras.io
+postgresql:
+  instances: 3
+  resources:
+    requests:
+      cpu: "2"
+      memory: 8Gi
+    limits:
+      memory: 8Gi
+  storage:
+    class_name: fast
+    size: 50Gi
+  parameters:
+    max_connections: 200
+    shared_buffers: 2GB
+    log_checkpoints: true

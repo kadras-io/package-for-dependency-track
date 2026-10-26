@@ -1,0 +1,5 @@
+# expected: a URL like `http://[user[:password]@]host[:port]`
+---
+domain_name: dependency-track.kadras.io
+proxy:
+  https_proxy: https://proxy.kadras.io:3128

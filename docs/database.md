@@ -11,9 +11,18 @@ For production, run at least three instances so that a failure of the read/write
 ```yaml
 postgresql:
   instances: 3
+  resources:
+    requests:
+      cpu: "4"
+      memory: 8Gi
+    limits:
+      memory: 8Gi
   storage:
+    class_name: fast-ssd
     size: 50Gi
 ```
+
+The resources and the StorageClass apply to each instance. The empty ones are left to the cluster defaults.
 
 ## Configuration parameters
 

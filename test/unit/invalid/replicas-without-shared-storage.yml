@@ -1,0 +1,5 @@
+# expected: `api_server.storage.access_modes` to include `ReadWriteMany`
+---
+domain_name: dependency-track.kadras.io
+api_server:
+  replicas: 2

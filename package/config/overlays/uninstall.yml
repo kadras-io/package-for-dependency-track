@@ -1,0 +1,35 @@
+#@ load("@ytt:overlay", "overlay")
+#@ load("/lib/dependency_track.star", "kek_secret_name", "postgresql_cluster_name", "storage_claim_name")
+
+#! The data of Dependency Track lives in the PostgreSQL database and in the API Server file storage,
+#! and the secrets stored in the database are encrypted with the key encryption key (KEK).
+#! Uninstalling the package keeps them, together with the namespace holding them: the API Server
+#! and the Frontend are deleted, while PostgreSQL keeps running. To remove them too, delete the
+#! namespace (see docs/upgrade.md). When the package is installed again, kapp updates the resources
+#! it left behind instead of failing because they already exist, and Dependency Track starts with
+#! the existing data.
+#! See: https://carvel.dev/kapp/docs/latest/apply/
+
+#@ def kept(kind, name=None):
+#@   metadata = {"name": name} if name else {}
+#@   return overlay.subset({"kind": kind, "metadata": metadata})
+#@ end
+
+#@ kept_resources = [
+#@   kept("Namespace"),
+#@   kept("Cluster", postgresql_cluster_name),
+#@   kept("ImageCatalog", postgresql_cluster_name),
+#@   kept("PersistentVolumeClaim", storage_claim_name),
+#@   kept("Password", "dependency-track-kek-material"),
+#@   kept("SecretTemplate", kek_secret_name),
+#@ ]
+
+#@overlay/match by=overlay.or_op(*kept_resources), expects=len(kept_resources)
+---
+metadata:
+  #@overlay/match missing_ok=True
+  annotations:
+    #@overlay/match missing_ok=True
+    kapp.k14s.io/delete-strategy: orphan
+    #@overlay/match missing_ok=True
+    kapp.k14s.io/create-strategy: fallback-on-update

@@ -1,0 +1,180 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: dependency-track
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+  annotations:
+    # Uninstalling the package keeps the namespace and the data in it,
+    # and installing it again adopts them.
+    kapp.k14s.io/delete-strategy: orphan
+    kapp.k14s.io/create-strategy: fallback-on-update
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: dependency-track
+  namespace: dependency-track
+automountServiceAccountToken: false
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dependency-track-api-server
+  namespace: dependency-track
+  annotations:
+    kapp.k14s.io/change-rule.upsert: upsert after upserting postgresql
+spec:
+  replicas: 1
+  template:
+    metadata:
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9000"
+    spec:
+      serviceAccountName: dependency-track
+      (serviceAccount == null): true
+      securityContext:
+        runAsNonRoot: true
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      imagePullSecrets:
+      - name: canonical-registry-credentials
+      (initContainers == null): true
+      (containers[?name == 'dependency-track-api-server'] | [0]):
+        # The version bundled with the package is set by kbld.
+        image: docker.io/dependencytrack/apiserver
+        securityContext:
+          readOnlyRootFilesystem: true
+        (env[?name == 'EXTRA_JAVA_OPTIONS'] | [0].value): ""
+        (env[?ends_with(name, '_PROXY')] | length(@)): 0
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dependency-track-frontend
+  namespace: dependency-track
+spec:
+  replicas: 1
+  template:
+    spec:
+      serviceAccountName: dependency-track
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      imagePullSecrets:
+      - name: canonical-registry-credentials
+      (containers[?name == 'dependency-track-frontend'] | [0]):
+        image: docker.io/dependencytrack/frontend
+        (env == null): true
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: dependency-track-storage
+  namespace: dependency-track
+  annotations:
+    kapp.k14s.io/delete-strategy: orphan
+spec:
+  accessModes:
+  - ReadWriteOnce
+  (storageClassName == null): true
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dependency-track-app-config
+  namespace: dependency-track
+data:
+  (contains("application.properties", 'dt.datasource.url=jdbc:postgresql://postgresql-dependency-track-rw.dependency-track.svc.cluster.local:5432/app')): true
+  (contains("application.properties", 'dt.logging.level."org.dependencytrack"=INFO')): true
+  (contains("application.properties", 'dt.metrics.enabled=true')): true
+  (contains("application.properties", 'api_server.config')): false
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: dependency-track
+  namespace: dependency-track
+  (annotations == null): true
+spec:
+  ingressClassName: contour
+  rules:
+  - host: dependency-track.kadras.io
+  tls:
+  - secretName: dependency-track-tls-secret
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: postgresql-dependency-track
+  namespace: dependency-track
+  annotations:
+    kapp.k14s.io/delete-strategy: orphan
+spec:
+  (imageName == null): true
+  imageCatalogRef:
+    kind: ImageCatalog
+    name: postgresql-dependency-track
+    major: 18
+  instances: 1
+  (resources == null): true
+  storage:
+    size: 1Gi
+    (storageClass == null): true
+  postgresql:
+    parameters:
+      jit: "off"
+      wal_compression: zstd
+  imagePullSecrets:
+  - name: canonical-registry-credentials
+  inheritedMetadata:
+    annotations:
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "9187"
+---
+# The PostgreSQL image is declared in a catalog, so that kbld can resolve it to a digest and bundle it.
+apiVersion: postgresql.cnpg.io/v1
+kind: ImageCatalog
+metadata:
+  name: postgresql-dependency-track
+  namespace: dependency-track
+  annotations:
+    kapp.k14s.io/delete-strategy: orphan
+spec:
+  images:
+  - major: 18
+    image: ghcr.io/cloudnative-pg/postgresql:18.4
+---
+apiVersion: secretgen.k14s.io/v1alpha1
+kind: Password
+metadata:
+  name: dependency-track-kek-material
+  namespace: dependency-track
+  annotations:
+    kapp.k14s.io/delete-strategy: orphan
+spec:
+  secretTemplate:
+    metadata:
+      labels:
+        # The generated Secret is kept on uninstall, so kapp must not track it.
+        kapp.k14s.io/app: ""
+---
+apiVersion: secretgen.carvel.dev/v1alpha1
+kind: SecretTemplate
+metadata:
+  name: dependency-track-kek
+  namespace: dependency-track
+  annotations:
+    kapp.k14s.io/delete-strategy: orphan
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: canonical-registry-credentials
+  namespace: dependency-track

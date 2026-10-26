@@ -1,30 +1,16 @@
 #@ load("@ytt:data", "data")
-#@ load("@ytt:struct", "struct")
-#@ load("config.star",
+#@ load("/lib/dependency_track.star",
 #@      "config_directory",
 #@      "data_directory",
-#@      "management_port",
-#@      "postgresql_database_name",
-#@      "postgresql_secret_directory",
-#@      "postgresql_service_name",
+#@      "format_map",
+#@      "jdbc_url",
 #@      "kek_secret_directory",
-#@      "kek_secret_key")
-
-#@ def jdbc_url():
-#@   host = "{}.dependency-track.svc.cluster.local".format(postgresql_service_name)
-#@   return "jdbc:postgresql://{}:5432/{}?reWriteBatchedInserts=true".format(host, postgresql_database_name)
-#@ end
-
-#! Booleans are rendered by Starlark as `True`/`False`, which Java properties don't understand.
-#@ def property_value(value):
-#@   if type(value) == "bool":
-#@     return str(value).lower()
-#@   end
-#@   return value
-#@ end
+#@      "kek_secret_key",
+#@      "management_port",
+#@      "postgresql_secret_directory")
 
 #@ def application_properties():
-#@   level = data.values.api_server.logging.level.upper()
+#@   level = data.values.observability.logging.level.upper()
 #@   lines = [
 #@     "# This file is mounted at {}/application.properties.".format(config_directory),
 #@     "",
@@ -50,18 +36,18 @@
 #@     "# which is only reachable from within the Pod.",
 #@     "dt.management.host=0.0.0.0",
 #@     "dt.management.port={}".format(management_port),
-#@     "dt.metrics.enabled={}".format(str(data.values.api_server.metrics.enabled).lower()),
+#@     "dt.metrics.enabled={}".format(str(data.values.observability.metrics.enabled).lower()),
 #@     "",
 #@     "dt.logging.level.\"alpine\"={}".format(level),
 #@     "dt.logging.level.\"org.dependencytrack\"={}".format(level),
 #@     "dt.logging.level.\"org.eclipse.jetty\"={}".format(level),
 #@   ]
-#@   extra_config = struct.decode(data.values.api_server.config)
+#@   extra_config = format_map(data.values.api_server.config)
 #@   if extra_config:
 #@     lines.append("")
 #@     lines.append("# Additional properties provided via the `api_server.config` value.")
-#@     for key in sorted(extra_config.keys()):
-#@       lines.append("{}={}".format(key, property_value(extra_config[key])))
+#@     for key, value in extra_config.items():
+#@       lines.append("{}={}".format(key, value))
 #@     end
 #@   end
 #@   return "\n".join(lines) + "\n"
@@ -72,7 +58,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: dependency-track-app-config
-  namespace: dependency-track
+  namespace: #@ data.values.namespace
   annotations:
     kapp.k14s.io/versioned: ""
 data:

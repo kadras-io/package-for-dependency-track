@@ -1,0 +1,10 @@
+---
+domain_name: dependency-track.kadras.io
+api_server:
+  replicas: 2
+  storage:
+    class_name: nfs
+    access_modes:
+    - ReadWriteMany
+frontend:
+  replicas: 3

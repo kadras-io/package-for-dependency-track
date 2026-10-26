@@ -1,0 +1,11 @@
+---
+domain_name: dependency-track.kadras.io
+api_server:
+  config:
+    dt.dex-engine.activity-worker.vuln-analysis.max-concurrency: 20
+    dt.datasource.pool.enabled: false
+frontend:
+  config:
+    OIDC_ISSUER: https://idp.kadras.io
+    OIDC_CLIENT_ID: dependency-track
+    OIDC_FLOW: implicit

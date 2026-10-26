@@ -1,0 +1,6 @@
+# expected: length >= 1
+---
+domain_name: dependency-track.kadras.io
+api_server:
+  storage:
+    access_modes: []

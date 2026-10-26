@@ -1,52 +1,24 @@
 #@ load("@ytt:data", "data")
+#@ load("/lib/dependency_track.star", "labels")
 
 #! A PodDisruptionBudget is only meaningful when more than one replica is running.
 #! With a single replica, it would block voluntary disruptions such as node drains.
+#! See: https://kubernetes.io/docs/tasks/run-application/configure-pdb/
 
-#! API SERVER
+#@ components = {"api-server": data.values.api_server.replicas, "frontend": data.values.frontend.replicas}
 
-#@ if data.values.api_server.replicas > 1:
+#@ for component, replicas in components.items():
+#@ if replicas > 1:
 ---
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
-  name: dependency-track-api-server
-  namespace: dependency-track
-  labels:
-    app.kubernetes.io/part-of: dependency-track
-    app.kubernetes.io/instance: dependency-track
-    app.kubernetes.io/name: dependency-track-api-server
-    app.kubernetes.io/component: api-server
+  name: #@ "dependency-track-" + component
+  namespace: #@ data.values.namespace
+  labels: #@ labels(component)
 spec:
   minAvailable: 1
   selector:
-    matchLabels:
-      app.kubernetes.io/part-of: dependency-track
-      app.kubernetes.io/instance: dependency-track
-      app.kubernetes.io/name: dependency-track-api-server
-      app.kubernetes.io/component: api-server
+    matchLabels: #@ labels(component)
 #@ end
-
-#! FRONTEND
-
-#@ if data.values.frontend.replicas > 1:
----
-apiVersion: policy/v1
-kind: PodDisruptionBudget
-metadata:
-  name: dependency-track-frontend
-  namespace: dependency-track
-  labels:
-    app.kubernetes.io/part-of: dependency-track
-    app.kubernetes.io/instance: dependency-track
-    app.kubernetes.io/name: dependency-track-frontend
-    app.kubernetes.io/component: frontend
-spec:
-  minAvailable: 1
-  selector:
-    matchLabels:
-      app.kubernetes.io/part-of: dependency-track
-      app.kubernetes.io/instance: dependency-track
-      app.kubernetes.io/name: dependency-track-frontend
-      app.kubernetes.io/component: frontend
 #@ end

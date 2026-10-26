@@ -6,7 +6,7 @@ When running Dependency Track behind a corporate proxy, you can configure the AP
 proxy:
   https_proxy: "http://proxy.kadras.io:3128"
   http_proxy: "http://proxy.kadras.io:3128"
-  no_proxy: "postgresql-dependency-track-rw,localhost"
+  no_proxy: "localhost,kadras.io"
 ```
 
 The Frontend component is a static single-page application, so the requests it appears to make actually originate from the user's browser and are not affected by this configuration.
@@ -15,6 +15,7 @@ A few constraints are worth knowing:
 
 * Only plain HTTP proxies are supported, optionally with Basic authentication (`http://user:password@host:port`). HTTPS-fronted proxies and SOCKS proxies don't work.
 * The `no_proxy` list accepts hostnames or IP addresses, optionally with a port. An entry matches the host exactly or any of its subdomains. CIDR ranges and leading-dot notation are not supported.
+* The connection to PostgreSQL doesn't go through the proxy, so it doesn't need to be listed in `no_proxy`. Add the in-cluster services the API Server calls over HTTP, if any, for example via `cluster.local`, which matches all of them.
 
 If the proxy terminates and re-issues TLS connections, the API Server must also trust the proxy's certificate authority. See [Trusting a Custom CA](custom-ca.md).
 

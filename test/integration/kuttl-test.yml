@@ -19,18 +19,18 @@ commands:
   - script: |
       kubectl config set-context --current --namespace=tests && \
       kapp deploy -a secretgen-controller-package -y \
-        -f https://github.com/kadras-io/package-for-secretgen-controller/releases/download/v0.21.1/package.yml \
-        -f https://github.com/kadras-io/package-for-secretgen-controller/releases/download/v0.21.1/metadata.yml
+        -f https://github.com/kadras-io/package-for-secretgen-controller/releases/download/v0.21.4/package.yml \
+        -f https://github.com/kadras-io/package-for-secretgen-controller/releases/download/v0.21.4/metadata.yml
   - script: |
       kubectl config set-context --current --namespace=tests && \
       kapp deploy -a cert-manager-package -y \
-        -f https://github.com/kadras-io/package-for-cert-manager/releases/download/v1.21.1/package.yml \
-        -f https://github.com/kadras-io/package-for-cert-manager/releases/download/v1.21.1/metadata.yml
+        -f https://github.com/kadras-io/package-for-cert-manager/releases/download/v1.21.3/package.yml \
+        -f https://github.com/kadras-io/package-for-cert-manager/releases/download/v1.21.3/metadata.yml
   - script: |
       kubectl config set-context --current --namespace=tests && \
       kapp deploy -a contour-package -y \
-        -f https://github.com/kadras-io/package-for-contour/releases/download/v1.33.6/package.yml \
-        -f https://github.com/kadras-io/package-for-contour/releases/download/v1.33.6/metadata.yml
+        -f https://github.com/kadras-io/package-for-contour/releases/download/v1.33.7/package.yml \
+        -f https://github.com/kadras-io/package-for-contour/releases/download/v1.33.7/metadata.yml
   - script: |
       kubectl config set-context --current --namespace=tests && \
       kapp deploy -a postgresql-operator-package -y \

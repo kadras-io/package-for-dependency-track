@@ -71,9 +71,39 @@ type: kubernetes.io/dockerconfigjson
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  name: dependency-track-api-server
   namespace: dependency-track
 spec:
   template:
     spec:
       imagePullSecrets:
         - name: canonical-registry-credentials
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dependency-track-frontend
+  namespace: dependency-track
+spec:
+  template:
+    spec:
+      imagePullSecrets:
+        - name: canonical-registry-credentials
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: postgresql-dependency-track
+  namespace: dependency-track
+spec:
+  imagePullSecrets:
+    - name: canonical-registry-credentials
+
+# Pod Security Standards
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: dependency-track
+  labels:
+    pod-security.kubernetes.io/enforce: restricted

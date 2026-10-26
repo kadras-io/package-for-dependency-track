@@ -1,5 +1,8 @@
 #@ load("@ytt:data", "data")
 #@ load("@ytt:struct", "struct")
+#@ load("/lib/dependency_track.star", "format_map", "labels", "postgresql_cluster_name")
+
+#@ postgresql_major_version = 18
 
 #! The default PostgreSQL configuration is intentionally conservative. These settings are
 #! recommended by Dependency Track for the workload it generates, and can be overridden or
@@ -16,24 +19,62 @@
 #!     Compressing the WAL trades a little CPU for significantly less I/O.
 #@     "wal_compression": "zstd",
 #@   }
-#@   for name, value in struct.decode(data.values.postgresql.parameters).items():
-#@     parameters[name] = str(value)
-#@   end
+#@   parameters.update(format_map(data.values.postgresql.parameters))
 #@   return parameters
 #@ end
+
+#! Only the resources that are set, so that the empty ones are left to the cluster defaults.
+#@ def postgresql_resources():
+#@   resources = {}
+#@   for kind, quantities in struct.decode(data.values.postgresql.resources).items():
+#@     quantities = {name: value for name, value in quantities.items() if value != ""}
+#@     if quantities:
+#@       resources[kind] = quantities
+#@     end
+#@   end
+#@   return resources
+#@ end
+
+#! The PostgreSQL image is provided via an image catalog, which declares its major version. kbld resolves
+#! the image to a digest so that it's part of the package bundle, while CloudNativePG needs to know the
+#! major version, which it can't read from a digest-only `imageName`.
+#! See: https://cloudnative-pg.io/docs/devel/image_catalog/
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: ImageCatalog
+metadata:
+  name: #@ postgresql_cluster_name
+  namespace: #@ data.values.namespace
+  labels: #@ labels("postgresql")
+  annotations:
+    kapp.k14s.io/change-group: postgresql-image-catalog
+spec:
+  images:
+  - major: #@ postgresql_major_version
+    image: ghcr.io/cloudnative-pg/postgresql:18.4
 
 ---
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
-  name: postgresql-dependency-track
-  namespace: dependency-track
+  name: #@ postgresql_cluster_name
+  namespace: #@ data.values.namespace
+  labels: #@ labels("postgresql")
   annotations:
     kapp.k14s.io/change-group: postgresql
+    kapp.k14s.io/change-rule.image-catalog: upsert after upserting postgresql-image-catalog
 spec:
-  imageName: ghcr.io/cloudnative-pg/postgresql:18.4
+  imageCatalogRef:
+    apiGroup: postgresql.cnpg.io
+    kind: ImageCatalog
+    name: #@ postgresql_cluster_name
+    major: #@ postgresql_major_version
   instances: #@ data.values.postgresql.instances
+  #@ if/end postgresql_resources():
+  resources: #@ postgresql_resources()
   storage:
+    #@ if/end data.values.postgresql.storage.class_name != "":
+    storageClass: #@ data.values.postgresql.storage.class_name
     size: #@ data.values.postgresql.storage.size
   postgresql:
     parameters: #@ postgresql_parameters()

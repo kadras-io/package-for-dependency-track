@@ -1,0 +1,4 @@
+#! Without an Ingress, the domain name isn't required.
+---
+ingress:
+  enabled: false

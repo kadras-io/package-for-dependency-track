@@ -1,73 +1,57 @@
 #@ load("@ytt:data", "data")
-#@ load("@ytt:struct", "struct")
-#@ load("config.star", "frontend_image_repository", "image_reference")
+#@ load("/lib/dependency_track.star",
+#@      "container_security_context",
+#@      "format_map",
+#@      "frontend_image_repository",
+#@      "frontend_name",
+#@      "image_reference",
+#@      "labels",
+#@      "pod_security_context")
 
 #! The Frontend is a static single-page application, entirely configured via environment
 #! variables that it renders into `/static/config.json` at startup.
 #@ def environment():
-#@   config = struct.decode(data.values.frontend.config)
-#@   variables = []
-#@   for name in sorted(config.keys()):
-#@     value = config[name]
-#@     if type(value) == "bool":
-#@       value = str(value).lower()
-#@     end
-#@     variables.append({"name": name, "value": str(value)})
-#@   end
-#@   return variables
-#@ end
-
-#@ def labels():
-app.kubernetes.io/part-of: dependency-track
-app.kubernetes.io/instance: dependency-track
-app.kubernetes.io/name: dependency-track-frontend
-app.kubernetes.io/component: frontend
+#@   return [{"name": name, "value": value} for name, value in format_map(data.values.frontend.config).items()]
 #@ end
 
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: dependency-track-frontend
-  namespace: dependency-track
-  labels: #@ labels()
+  name: #@ frontend_name
+  namespace: #@ data.values.namespace
+  labels: #@ labels("frontend")
 spec:
   type: "ClusterIP"
   ports:
   - name: web
     port: 8080
     targetPort: web
-  selector: #@ labels()
+  selector: #@ labels("frontend")
 
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: dependency-track-frontend
-  namespace: dependency-track
-  labels: #@ labels()
+  name: #@ frontend_name
+  namespace: #@ data.values.namespace
+  labels: #@ labels("frontend")
 spec:
   replicas: #@ data.values.frontend.replicas
   selector:
-    matchLabels: #@ labels()
+    matchLabels: #@ labels("frontend")
   template:
     metadata:
-      labels: #@ labels()
+      labels: #@ labels("frontend")
     spec:
-      serviceAccount: dependency-track
+      serviceAccountName: dependency-track
+      securityContext: #@ pod_security_context()
       containers:
-      - name: dependency-track-frontend
-        image: #@ image_reference(frontend_image_repository, data.values.image.tag)
+      - name: #@ frontend_name
+        image: #@ image_reference(frontend_image_repository)
         imagePullPolicy: IfNotPresent
-        securityContext: 
-          allowPrivilegeEscalation: false
-          capabilities:
-            drop:
-            - ALL
-          readOnlyRootFilesystem: false
-          runAsNonRoot: true
-          seccompProfile:
-            type: RuntimeDefault
+        #! The container writes `static/config.json` into the web root at startup, so the root filesystem can't be read-only.
+        securityContext: #@ container_security_context(read_only_root_filesystem=False)
         resources: #@ data.values.frontend.resources
         #! `API_BASE_URL` is intentionally left unset by default. The Ingress serves both the
         #! Frontend and the API Server from the same host, so the Frontend can call the API

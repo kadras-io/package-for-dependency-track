@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dependency-track-api-server
+spec:
+  template:
+    spec:
+      (containers[?name == 'dependency-track-api-server'] | [0]):
+        (env[?name == 'HTTPS_PROXY'] | [0].value): http://proxy.kadras.io:3128
+        (env[?name == 'NO_PROXY'] | [0].value): localhost,kadras.io
+        # The unset ones are left out.
+        (env[?name == 'HTTP_PROXY'] | length(@)): 0
+        # The proxy variables are appended to the existing ones.
+        (env[?name == 'EXTRA_JAVA_OPTIONS'] | length(@)): 1
+---
+# The Frontend requests come from the browser.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dependency-track-frontend
+spec:
+  template:
+    spec:
+      (containers[?name == 'dependency-track-frontend'] | [0]):
+        (env == null): true

@@ -1,0 +1,7 @@
+# expected: a map of strings, numbers or booleans
+---
+domain_name: dependency-track.kadras.io
+frontend:
+  config:
+    OIDC:
+      ISSUER: https://idp.kadras.io

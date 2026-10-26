@@ -1,0 +1,4 @@
+---
+domain_name: dependency-track.kadras.io
+image:
+  tag: 5.2.2

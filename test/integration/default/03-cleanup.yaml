@@ -1,0 +1,6 @@
+---
+# Removes the data the uninstallation kept, deleting the namespace with everything in it.
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+commands:
+  - script: kubectl delete namespace dependency-track --wait

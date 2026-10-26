@@ -59,7 +59,7 @@ Each release of this package bundles a specific version of Dependency Track, wit
 
 ```yaml
 image:
-  tag: "5.0.5"
+  tag: "5.2.2"
 ```
 
 The images for the overridden version are not part of the package bundle, so they must be available in a container registry reachable from the cluster. This is not supported in air-gapped environments, where a new package release is needed instead.

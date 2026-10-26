@@ -1,0 +1,36 @@
+#@ load("@ytt:data", "data")
+#@ load("@ytt:overlay", "overlay")
+#@ load("/lib/dependency_track.star", "api_server_name")
+
+#! The API Server routes its outbound calls (vulnerability data sources, package repositories,
+#! OIDC discovery, webhooks) through the proxy configured via the standard environment variables.
+#! The Frontend is a static single-page app, so its requests originate from the user's browser
+#! and are not affected by this configuration.
+#! See: https://dependencytrack.github.io/docs/next/guides/administration/configuring-http-proxy/
+
+#@ def proxy_env():
+#@   variables = {
+#@     "HTTP_PROXY": data.values.proxy.http_proxy,
+#@     "HTTPS_PROXY": data.values.proxy.https_proxy,
+#@     "NO_PROXY": data.values.proxy.no_proxy,
+#@   }
+#@   return [{"name": name, "value": value} for name, value in variables.items() if value != ""]
+#@ end
+
+#@ env = proxy_env()
+
+#@ if env:
+#@overlay/match by=overlay.subset({"kind":"Deployment", "metadata":{"name":api_server_name}})
+---
+spec:
+  template:
+    spec:
+      containers:
+      #@overlay/match by="name"
+      - name: #@ api_server_name
+        env:
+        #@ for variable in env:
+        #@overlay/append
+        - #@ variable
+        #@ end
+#@ end

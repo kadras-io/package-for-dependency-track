@@ -1,0 +1,18 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: dependency-track
+  namespace: dependency-track
+  annotations:
+    cert-manager.io/cluster-issuer: kadras-ca-issuer
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: dependency-track.kadras.io
+    http:
+      (paths[?path == '/api'] | [0].backend.service.name): dependency-track-api-server
+      (paths[?path == '/'] | [0].backend.service.name): dependency-track-frontend
+  tls:
+  - hosts:
+    - dependency-track.kadras.io
+    secretName: dependency-track-certificate

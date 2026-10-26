@@ -7,16 +7,16 @@ Monitor and observe the operation of Dependency Track using logs and metrics.
 The log verbosity for the Dependency Track API Server can be configured.
 
 ```yaml
-api_server:
+observability:
   logging:
     level: info
 ```
 
-Logs are printed to the console in a human-readable format. If you collect logs with a
+Logs are printed in a human-readable text format by default. If you collect logs with a
 structured logging pipeline, you can switch the format to JSON.
 
 ```yaml
-api_server:
+observability:
   logging:
     format: json
 ```
@@ -25,22 +25,17 @@ api_server:
 
 The Dependency Track API Server exposes Prometheus metrics by default on its management port (`9000`), which is only reachable from within the Pod. This package comes pre-configured with the necessary annotations to let Prometheus scrape metrics automatically from Dependency Track.
 
-If you need, you can always disable the generation of Prometheus metrics.
-
-```yaml
-api_server:
-  metrics:
-    enabled: false
-```
 
 For more information, check the Dependency Track documentation for [metrics](https://dependencytrack.github.io/docs/next/reference/configuration/properties/).
 
 The PostgreSQL database used by Dependency Track also exposes metrics that can be scraped by Prometheus. This package comes pre-configured with the necessary annotations to let Prometheus scrape metrics automatically from the PostgreSQL database.
 
-If you need, you can always disable the generation of Prometheus metrics for the PostgreSQL database.
+The PostgreSQL Pods are annotated via the `inheritedMetadata` field of the CloudNativePG Cluster, which applies the annotations to all the objects the operator creates.
+
+If you need, you can disable the Prometheus metrics of the API Server and the scraping annotations of both.
 
 ```yaml
-postgresql:
+observability:
   metrics:
     enabled: false
 ```

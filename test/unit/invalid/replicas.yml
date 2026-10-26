@@ -1,0 +1,5 @@
+# expected: a value >= 1
+---
+domain_name: dependency-track.kadras.io
+frontend:
+  replicas: 0

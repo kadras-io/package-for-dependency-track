@@ -14,7 +14,7 @@ used for BOMs and other uploaded artifacts, which is backed by a PersistentVolum
 volume is created with the `ReadWriteOnce` access mode, so a single replica is used.
 
 To run more than one API Server replica, the volume must be shared across Pods. Use a storage class
-supporting the `ReadWriteMany` access mode (such as EFS, Azure Files, or CephFS).
+supporting the `ReadWriteMany` access mode (such as EFS, Azure Files, or CephFS). The package rejects more than one replica without it.
 
 ```yaml
 api_server:
@@ -26,7 +26,7 @@ api_server:
 
 When a component runs more than one replica, a `PodDisruptionBudget` is created for it, keeping at least one Pod available during voluntary disruptions such as node drains.
 
-The PostgreSQL database is deployed via the CloudNativePG Operator and supports a highly availability setup
+The PostgreSQL database is deployed via the CloudNativePG Operator and supports a highly available setup
 with one read/write instance and multiple read-only replicas.
 
 ```yaml

@@ -1,0 +1,6 @@
+# expected: one of ["text", "json"]
+---
+domain_name: dependency-track.kadras.io
+observability:
+  logging:
+    format: console

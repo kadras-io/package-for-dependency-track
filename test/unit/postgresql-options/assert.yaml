@@ -1,0 +1,25 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: postgresql-dependency-track
+spec:
+  instances: 3
+  resources:
+    requests:
+      cpu: "2"
+      memory: 8Gi
+    limits:
+      memory: 8Gi
+      # The empty ones are left out.
+      (cpu == null): true
+  storage:
+    storageClass: fast
+    size: 50Gi
+  postgresql:
+    parameters:
+      # The recommended ones are kept, and the values are rendered as strings.
+      jit: "off"
+      wal_compression: zstd
+      max_connections: "200"
+      shared_buffers: 2GB
+      log_checkpoints: "true"

@@ -8,6 +8,13 @@
 
 A Carvel package for [Dependency Track](https://dependencytrack.org), a continuous SBOM Analysis Platform for managing software supply chain security risks.
 
+## ✨&nbsp; What's Included
+
+* **Dependency Track**. The API Server and the Frontend, served from the same domain via an Ingress with a TLS certificate issued by cert-manager.
+* **Database**. A PostgreSQL cluster managed by CloudNativePG, tuned as recommended by Dependency Track. The database, the file storage, and the encryption key for the secrets are kept when uninstalling the package.
+* **Observability**. Structured logs, and metrics annotated for Prometheus scraping.
+* **Security**. The workloads comply with the `restricted` [Pod Security Standard](https://kubernetes.io/docs/concepts/security/pod-security-standards/), enforced on their namespace, and don't mount service account tokens. The key encrypting the secrets managed by Dependency Track is generated at installation time.
+
 ## 🚀&nbsp; Getting Started
 
 ### Prerequisites
@@ -23,12 +30,7 @@ A Carvel package for [Dependency Track](https://dependencytrack.org), a continuo
 
 ### Dependencies
 
-Dependency Track requires the following packages included in the Kadras Engineering Platform and available to install from the [Kadras package repository](https://github.com/kadras-io/kadras-packages):
-
-* [cert-manager](https://github.com/kadras-io/package-for-cert-manager)
-* [Contour](https://github.com/kadras-io/package-for-contour)
-* [secretgen-controller](https://github.com/kadras-io/package-for-secretgen-controller)
-* [PostgreSQL Operator](https://github.com/kadras-io/package-for-postgresql-operator). 
+Dependency Track requires [secretgen-controller](https://github.com/kadras-io/package-for-secretgen-controller) to generate its encryption key, and the [PostgreSQL Operator](https://github.com/kadras-io/package-for-postgresql-operator) to run its database. By default, it's exposed via an Ingress for [Contour](https://github.com/kadras-io/package-for-contour), with a TLS certificate issued by [cert-manager](https://github.com/kadras-io/package-for-cert-manager) when `ingress.issuer` is set. All of them are available to install from the [Kadras package repository](https://github.com/kadras-io/kadras-packages).
 
 ### Installation
 
@@ -73,18 +75,46 @@ Verify the installed packages and their status:
   kctrl package installed list -n kadras-system
   ```
 
+### Try It Out
+
+Check that Dependency Track is running:
+
+```shell
+kubectl get deployment -n dependency-track
+kubectl get cluster.postgresql.cnpg.io -n dependency-track
+```
+
+Open the domain configured in `domain_name` in your browser, and log in with the default `admin` user and `admin` password. You'll be asked to change the password at the first login.
+
 ## 📙&nbsp; Documentation
 
 Documentation, tutorials and examples for this package are available in the [docs](docs) folder.
 For documentation specific to Dependency Track, check out [dependencytrack.org](https://dependencytrack.github.io/docs/).
+
+Features:
+
+* [Application configuration](docs/application-configuration.md)
+* [Database](docs/database.md)
+* [High availability](docs/high-availability.md)
+* [Observability](docs/observability.md)
+* [Security](docs/security.md)
+
+Operations:
+
+* [Configuration and ytt overlays](docs/configuration.md)
+* [Custom certificate authorities](docs/custom-ca.md)
+* [Corporate proxy](docs/corporate-proxy.md)
+* [Upgrading and uninstalling](docs/upgrade.md)
+* [Verifying the release](docs/verify-release.md)
 
 ## 🎯&nbsp; Configuration
 
 The Dependency Track package can be customized via a `values.yml` file.
 
 ```yaml
-domain_name: "dependency-track.kadras.io"
-ingress_issuer: "kadras-ca-issuer"
+domain_name: dependency-track.kadras.io
+ingress:
+  issuer: kadras-ca-issuer
 postgresql:
   instances: 3
 ```
@@ -99,66 +129,80 @@ kctrl package install -i dependency-track \
   --values-file values.yml
 ```
 
+Any resource can be customized beyond the values via ytt overlays. See [configuration.md](docs/configuration.md).
+
 ### Values
 
 The Dependency Track package has the following configurable properties.
 
 <details><summary>Configurable properties</summary>
 
+<!-- values-table:start -->
+
 | Config | Default | Description |
-|-------|-------------------|-------------|
-| `ca_cert_data` | `""` | PEM-encoded certificate data to trust TLS connections with a custom CA. It's imported into the Java truststore used by the API Server. |
+|--------|---------|-------------|
+| `namespace` | `"dependency-track"` | The namespace where to install Dependency Track. |
+| `domain_name` | `""` | The domain name where Dependency Track is served. Both the Frontend and the API Server (under `/api`) are served from it. |
+| `ingress.enabled` | `true` | Whether to expose Dependency Track via an Ingress. When disabled, expose the `dependency-track-frontend` and `dependency-track-api-server` Services yourself. |
+| `ingress.class_name` | `"contour"` | The IngressClass to use for the Ingress. |
+| `ingress.issuer` | `""` | The cert-manager ClusterIssuer that issues the TLS certificate for the Ingress. When empty, the Secret named `ingress.tls_secret_name` must be provided. |
+| `ingress.tls_secret_name` | `"dependency-track-tls-secret"` | The name of the Secret holding the TLS certificate for the Ingress. |
 | `image.tag` | `""` | The tag to use for the API Server and Frontend container images, overriding the Dependency Track version bundled with this package. The images must be available in a container registry reachable from the cluster, since they are not part of the package bundle. |
-| `domain_name` | `""` | Domain name for Dependency Track. It must be a valid DNS name. |
-| `ingress_issuer` | `""` | A reference to the ClusterIssuer to use for enabling TLS in Dependency Track. |
-
-
-Settings for the API Server component.
-
-| Config | Default | Description |
-|-------|-------------------|-------------|
-| `api_server.replicas` | `1` | The number of API Server replicas. Values greater than 1 require a storage class supporting the `ReadWriteMany` access mode. |
-| `api_server.logging.level` | `info` | Log verbosity level. Options: `trace`, `debug`, `info`, `warn`, `error`. |
-| `api_server.logging.format` | `console` | Log encoding format. Options: `console`, `json`. |
-| `api_server.metrics.enabled` | `true` | Whether to enable the generation of Prometheus metrics. |
-| `api_server.resources.requests.cpu` | `0.5` | CPU requests configuration for the API Server component. |
-| `api_server.resources.requests.memory` | `5Gi` | Memory requests configuration for the API Server component. |
-| `api_server.resources.limits.cpu` | `4` | CPU limits configuration for the API Server component. |
-| `api_server.resources.limits.memory` | `5Gi` | Memory limits configuration for the API Server component. |
-| `api_server.storage.class_name` | `""` | Class name for the PersistenceVolume to create. |
-| `api_server.storage.size` | `1Gi` | Size of the PersistenceVolume to create. |
-| `api_server.storage.access_modes` | `["ReadWriteOnce"]` | Access modes for the PersistenceVolume to create. `ReadWriteMany` is required when running more than one API Server replica. |
-| `api_server.config` | `{}` | Additional configuration properties for the API Server, appended to the `application.properties` file and taking precedence over the ones managed by this package. See the [properties reference](https://dependencytrack.github.io/docs/next/reference/configuration/properties) for the full list. |
-
-Settings for the Frontend component.
-
-| Config | Default | Description |
-|-------|-------------------|-------------|
-| `frontend.replicas` | `1` | The number of Frontend replicas. In order to enable high availability, it should be greater than 1. |
-| `frontend.config` | `{}` | Configuration for the Frontend, provided as environment variables. Use it to enable OpenID Connect, or to point the Frontend at an API Server served from a different host via `API_BASE_URL`. |
-| `frontend.resources.requests.cpu` | `150m` | CPU requests configuration for the Frontend component. |
-| `frontend.resources.requests.memory` | `64Mi` | Memory requests configuration for the Frontend component. |
-| `frontend.resources.limits.cpu` | `500m` | CPU limits configuration for the Frontend component. |
-| `frontend.resources.limits.memory` | `128Mi` | Memory limits configuration for the Frontend component. |
-
-Settings for the corporate proxy used by the API Server when calling external services.
-
-| Config | Default | Description |
-|-------|-------------------|-------------|
-| `proxy.https_proxy` | `""` | The HTTPS proxy to use for network traffic. It must be a plain HTTP URL in the form `http://[user[:password]@]host[:port]`. |
-| `proxy.http_proxy` | `""` | The HTTP proxy to use for network traffic. Used only when `https_proxy` is not configured. It must be a plain HTTP URL in the form `http://[user[:password]@]host[:port]`. |
+| `api_server.replicas` | `1` | The number of API Server replicas. Values greater than 1 require the `ReadWriteMany` access mode for the storage. |
+| `api_server.resources.requests.cpu` | `"0.5"` | The CPU requested by the API Server. |
+| `api_server.resources.requests.memory` | `"5Gi"` | The memory requested by the API Server. |
+| `api_server.resources.limits.cpu` | `"4"` | The CPU limit for the API Server. |
+| `api_server.resources.limits.memory` | `"5Gi"` | The memory limit for the API Server. |
+| `api_server.storage.class_name` | `""` | The StorageClass for the PersistentVolume. When empty, the default StorageClass is used. |
+| `api_server.storage.size` | `"1Gi"` | The size of the PersistentVolume. |
+| `api_server.storage.access_modes` | `["ReadWriteOnce"]` | The access modes for the PersistentVolume. `ReadWriteMany` is required when running more than one API Server replica. |
+| `api_server.config` | `{}` | Additional configuration properties for the API Server, appended to the `application.properties` file and taking precedence over the ones managed by this package. See https://dependencytrack.github.io/docs/next/reference/configuration/properties for the full list. |
+| `frontend.replicas` | `1` | The number of Frontend replicas. Set it greater than 1 for high availability. |
+| `frontend.resources.requests.cpu` | `"150m"` | The CPU requested by the Frontend. |
+| `frontend.resources.requests.memory` | `"64Mi"` | The memory requested by the Frontend. |
+| `frontend.resources.limits.cpu` | `"500m"` | The CPU limit for the Frontend. |
+| `frontend.resources.limits.memory` | `"128Mi"` | The memory limit for the Frontend. |
+| `frontend.config` | `{}` | Configuration for the Frontend, provided as environment variables. Use it to enable OpenID Connect, or to point the Frontend at an API Server served from a different host via `API_BASE_URL`. See https://dependencytrack.github.io/docs/next/guides/administration/configuring-oidc for the OpenID Connect settings. |
+| `postgresql.instances` | `1` | The number of PostgreSQL instances: one primary and its replicas. Use at least 3 in production. |
+| `postgresql.resources.requests.cpu` | `""` | The CPU requested by each PostgreSQL instance. |
+| `postgresql.resources.requests.memory` | `""` | The memory requested by each PostgreSQL instance. |
+| `postgresql.resources.limits.cpu` | `""` | The CPU limit for each PostgreSQL instance. |
+| `postgresql.resources.limits.memory` | `""` | The memory limit for each PostgreSQL instance. |
+| `postgresql.storage.class_name` | `""` | The StorageClass for the PersistentVolumes. When empty, the default StorageClass is used. |
+| `postgresql.storage.size` | `"1Gi"` | The size of the PersistentVolume of each PostgreSQL instance. |
+| `postgresql.parameters` | `{}` | Configuration parameters for the PostgreSQL server, merged on top of the ones recommended by Dependency Track (`jit=off` and `wal_compression=zstd`). Remember that `max_connections` must cover the sum of the connection pools of all the API Server replicas, plus headroom for migrations, backups, and administrator sessions. |
+| `ca_cert_data` | `""` | PEM-encoded certificates of the CAs to trust in TLS connections, in addition to the public ones. They're imported into the Java truststore used by the API Server. |
+| `observability.logging.level` | `"info"` | The log verbosity level: `trace`, `debug`, `info`, `warn`, or `error`. |
+| `observability.logging.format` | `"text"` | The log format: `text`, or `json` for structured logs. |
+| `observability.metrics.enabled` | `true` | Whether the API Server and PostgreSQL expose Prometheus metrics, and their Pods are annotated for scraping. |
+| `proxy.http_proxy` | `""` | The proxy for the network traffic, in the form `http://[user[:password]@]host[:port]`. Used only when `https_proxy` is not set. |
+| `proxy.https_proxy` | `""` | The proxy for the network traffic, in the form `http://[user[:password]@]host[:port]`. |
 | `proxy.no_proxy` | `""` | A comma-separated list of hostnames or IP addresses, optionally with a port, that should not use the proxy. An entry matches the host exactly or any of its subdomains. CIDR ranges and leading-dot notation are not supported. |
 
-Settings for the PostgreSQL database.
-
-| Config | Default | Description |
-|-------|-------------------|-------------|
-| `postgresql.instances` | `1` | Number of instances for the PostgreSQL database cluster. Define at least 3 for production scenarios. |
-| `postgresql.metrics.enabled` | `true` | Whether to enable the generation of Prometheus metrics. |
-| `postgresql.storage.size` | `1Gi` | Size of the PersistenceVolume to create for each PostgreSQL instance. |
-| `postgresql.parameters` | `{}` | Configuration parameters for the PostgreSQL server, merged on top of the ones recommended by Dependency Track (`jit=off` and `wal_compression=zstd`). Remember that `max_connections` must cover the sum of the connection pools of all the API Server replicas, plus headroom for migrations, backups, and administrator sessions. |
+<!-- values-table:end -->
 
 </details>
+
+## 🛠️&nbsp; Development
+
+The development environment is defined with [devenv](https://devenv.sh). Enter it with `devenv shell`, or automatically with [direnv](https://direnv.net) after running `direnv allow`. Run `task --list` to see all the available tasks.
+
+```shell
+# Run the unit tests, which render the package and check the result without a cluster.
+task test:config
+
+# Create a local kind cluster and run the integration tests on it.
+task cluster:setup
+task test:integration
+
+# Deploy the package from the local sources to the current cluster.
+task dev
+
+# Update the table of configurable values in this README after changing the values schema.
+task docs:values
+```
+
+The unit tests are described in [test/unit/README.md](test/unit/README.md).
 
 ## 🛡️&nbsp; Security
 

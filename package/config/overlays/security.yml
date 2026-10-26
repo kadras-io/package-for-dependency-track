@@ -1,0 +1,18 @@
+#@ load("@ytt:overlay", "overlay")
+
+#! The API Server, the Frontend and PostgreSQL comply with the "restricted" Pod Security Standard,
+#! which is enforced on the package namespace.
+#! See: https://kubernetes.io/docs/concepts/security/pod-security-standards/#restricted
+#! and https://cloudnative-pg.io/docs/devel/security/
+
+#@overlay/match by=overlay.subset({"kind":"Namespace"})
+---
+metadata:
+  #@overlay/match missing_ok=True
+  labels:
+    #@overlay/match missing_ok=True
+    pod-security.kubernetes.io/enforce: restricted
+    #@overlay/match missing_ok=True
+    pod-security.kubernetes.io/audit: restricted
+    #@overlay/match missing_ok=True
+    pod-security.kubernetes.io/warn: restricted

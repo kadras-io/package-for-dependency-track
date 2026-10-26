@@ -1,0 +1,6 @@
+# expected: one of ["trace", "debug", "info", "warn", "error"]
+---
+domain_name: dependency-track.kadras.io
+observability:
+  logging:
+    level: fatal

@@ -1,13 +1,13 @@
 #@ load("@ytt:data", "data")
 #@ load("@ytt:overlay", "overlay")
-#@ load("/manifests/config.star", "api_server_image_repository", "image_reference")
+#@ load("/lib/dependency_track.star", "api_server_image_repository", "api_server_name", "container_security_context", "image_reference")
 
 #! The Java runtime bundled in the Dependency Track container image trusts only well-known
 #! public certificate authorities, and it doesn't read the operating system trust store.
 #! To trust an internal CA, its certificate must be imported into the JVM truststore, which
 #! is done by copying the default truststore into a volume, importing the certificate into
 #! the copy, and mounting the result over the original one.
-#! https://dependencytrack.github.io/docs/next/guides/administration/configuring-internal-ca
+#! See: https://dependencytrack.github.io/docs/next/guides/administration/configuring-internal-ca
 
 #@ ca_certs_secret_name = "dependency-track-ca-certs"
 #@ ca_certs_directory = "/etc/dt/ca-certificates"
@@ -21,7 +21,7 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: #@ ca_certs_secret_name
-  namespace: dependency-track
+  namespace: #@ data.values.namespace
   #! A new Secret is created whenever the certificates change, so that the API Server
   #! is rolled out and re-imports them into the truststore.
   annotations:
@@ -31,7 +31,7 @@ stringData:
   ca.crt: |
     (@= data.values.ca_cert_data @)
 
-#@overlay/match by=overlay.subset({"kind":"Deployment", "metadata":{"name":"dependency-track-api-server"}})
+#@overlay/match by=overlay.subset({"kind":"Deployment", "metadata":{"name":api_server_name}})
 ---
 spec:
   template:
@@ -39,7 +39,7 @@ spec:
       #@overlay/match missing_ok=True
       initContainers:
         - name: import-ca-certificates
-          image: #@ image_reference(api_server_image_repository, data.values.image.tag)
+          image: #@ image_reference(api_server_image_repository)
           imagePullPolicy: IfNotPresent
           command:
             - sh
@@ -59,15 +59,7 @@ spec:
                   -keystore ./cacerts -storepass changeit \
                   -alias "$(basename "$certificate" .pem)" -file "$certificate"
               done
-          securityContext:
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-                - ALL
-            readOnlyRootFilesystem: true
-            runAsNonRoot: true
-            seccompProfile:
-              type: RuntimeDefault
+          securityContext: #@ container_security_context()
           resources:
             requests:
               cpu: "100m"
@@ -82,7 +74,7 @@ spec:
               readOnly: true
       containers:
         #@overlay/match by="name"
-        - name: dependency-track-api-server
+        - name: #@ api_server_name
           volumeMounts:
             #@overlay/append
             - name: truststore

@@ -1,0 +1,3 @@
+#! The default values, plus the required domain name.
+---
+domain_name: dependency-track.kadras.io

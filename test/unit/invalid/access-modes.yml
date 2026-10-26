@@ -1,0 +1,7 @@
+# expected: one of ["ReadWriteOnce", "ReadWriteMany", "ReadOnlyMany", "ReadWriteOncePod"]
+---
+domain_name: dependency-track.kadras.io
+api_server:
+  storage:
+    access_modes:
+    - RWO

@@ -1,0 +1,36 @@
+---
+# The data is kept: the namespace, the database, the file storage, and the encryption key.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: dependency-track
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: postgresql-dependency-track
+  namespace: dependency-track
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: ImageCatalog
+metadata:
+  name: postgresql-dependency-track
+  namespace: dependency-track
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: dependency-track-storage
+  namespace: dependency-track
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: dependency-track-kek
+  namespace: dependency-track
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: dependency-track-kek-material
+  namespace: dependency-track

@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dependency-track-app-config
+data:
+  (contains("application.properties", 'dt.dex-engine.activity-worker.vuln-analysis.max-concurrency=20')): true
+  # Booleans are rendered as Java properties understand them.
+  (contains("application.properties", 'dt.datasource.pool.enabled=false')): true
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dependency-track-frontend
+spec:
+  template:
+    spec:
+      (containers[?name == 'dependency-track-frontend'] | [0]):
+        # Sorted by name.
+        env:
+        - name: OIDC_CLIENT_ID
+          value: dependency-track
+        - name: OIDC_FLOW
+          value: implicit
+        - name: OIDC_ISSUER
+          value: https://idp.kadras.io

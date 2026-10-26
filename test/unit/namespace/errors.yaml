@@ -1,0 +1,60 @@
+# No resource left in the default namespace.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: dependency-track
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: dependency-track
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: dependency-track
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  namespace: dependency-track
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: dependency-track
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  namespace: dependency-track
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  namespace: dependency-track
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  namespace: dependency-track
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  namespace: dependency-track
+---
+apiVersion: secretgen.k14s.io/v1alpha1
+kind: Password
+metadata:
+  namespace: dependency-track
+---
+apiVersion: secretgen.carvel.dev/v1alpha1
+kind: SecretTemplate
+metadata:
+  namespace: dependency-track
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: ImageCatalog
+metadata:
+  namespace: dependency-track

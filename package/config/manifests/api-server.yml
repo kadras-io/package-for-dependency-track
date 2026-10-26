@@ -1,27 +1,25 @@
 #@ load("@ytt:data", "data")
-#@ load("config.star",
+#@ load("/lib/dependency_track.star",
 #@      "api_server_image_repository",
+#@      "api_server_name",
 #@      "config_directory",
+#@      "container_security_context",
 #@      "data_directory",
+#@      "image_reference",
+#@      "kek_secret_directory",
+#@      "kek_secret_key",
+#@      "kek_secret_name",
+#@      "labels",
 #@      "management_port",
+#@      "pod_security_context",
 #@      "postgresql_secret_directory",
 #@      "postgresql_secret_name",
-#@      "kek_secret_directory",
-#@      "kek_secret_name",
-#@      "kek_secret_key",
-#@      "image_reference")
-
-#@ def labels():
-app.kubernetes.io/part-of: dependency-track
-app.kubernetes.io/instance: dependency-track
-app.kubernetes.io/name: dependency-track-api-server
-app.kubernetes.io/component: api-server
-#@ end
+#@      "storage_claim_name")
 
 #! The official container image bundles a Logback configuration producing JSON logs,
 #! which is enabled via a JVM system property.
 #@ def extra_java_options():
-#@   if data.values.api_server.logging.format == "json":
+#@   if data.values.observability.logging.format == "json":
 #@     return "-Dlogback.configurationFile=logback-json.xml"
 #@   end
 #@   return ""
@@ -33,24 +31,24 @@ app.kubernetes.io/component: api-server
 apiVersion: v1
 kind: Service
 metadata:
-  name: dependency-track-api-server
-  namespace: dependency-track
-  labels: #@ labels()
+  name: #@ api_server_name
+  namespace: #@ data.values.namespace
+  labels: #@ labels("api-server")
 spec:
   type: "ClusterIP"
   ports:
   - name: web
     port: 8080
     targetPort: web
-  selector: #@ labels()
+  selector: #@ labels("api-server")
 
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: dependency-track-storage
-  namespace: dependency-track
-  labels: #@ labels()
+  name: #@ storage_claim_name
+  namespace: #@ data.values.namespace
+  labels: #@ labels("api-server")
 spec:
   accessModes: #@ data.values.api_server.storage.access_modes
   #@ if/end data.values.api_server.storage.class_name != "":
@@ -63,12 +61,13 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: dependency-track-api-server
-  namespace: dependency-track
-  labels: #@ labels()
+  name: #@ api_server_name
+  namespace: #@ data.values.namespace
+  labels: #@ labels("api-server")
   annotations:
     kapp.k14s.io/change-group: dependency-track
-    kapp.k14s.io/change-rule.dependency-track: upsert after upserting postgresql
+    kapp.k14s.io/change-rule.upsert: upsert after upserting postgresql
+    kapp.k14s.io/change-rule.delete: delete before deleting postgresql
 spec:
   replicas: #@ data.values.api_server.replicas
   #! A new Pod is only created after the previous one has been terminated, so that a
@@ -79,30 +78,21 @@ spec:
       maxSurge: 0
       maxUnavailable: 1
   selector:
-    matchLabels: #@ labels()
+    matchLabels: #@ labels("api-server")
   template:
     metadata:
-      labels: #@ labels()
+      labels: #@ labels("api-server")
     spec:
-      serviceAccount: dependency-track
+      serviceAccountName: dependency-track
       #! The container runs as UID 1000, which needs write access to the data directory.
-      securityContext:
-        fsGroup: 1000
+      securityContext: #@ pod_security_context(fs_group=1000)
       #! Enough time for in-flight BOM uploads and background tasks to complete.
       terminationGracePeriodSeconds: 120
       containers:
-      - name: dependency-track-api-server
-        image: #@ image_reference(api_server_image_repository, data.values.image.tag)
+      - name: #@ api_server_name
+        image: #@ image_reference(api_server_image_repository)
         imagePullPolicy: IfNotPresent
-        securityContext:
-          allowPrivilegeEscalation: false
-          capabilities:
-            drop:
-            - ALL
-          readOnlyRootFilesystem: true
-          runAsNonRoot: true
-          seccompProfile:
-            type: RuntimeDefault
+        securityContext: #@ container_security_context()
         resources: #@ data.values.api_server.resources
         env:
         - name: EXTRA_JAVA_OPTIONS
@@ -164,7 +154,7 @@ spec:
       volumes:
       - name: #@ data_directory_volume
         persistentVolumeClaim:
-          claimName: dependency-track-storage
+          claimName: #@ storage_claim_name
       - name: tmp
         emptyDir: { }
       - name: app-config

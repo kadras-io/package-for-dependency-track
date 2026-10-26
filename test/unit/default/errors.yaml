@@ -1,0 +1,16 @@
+# A single replica doesn't get a PodDisruptionBudget, which would block node drains.
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+---
+# No custom CA certificates.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: dependency-track-ca-certs
+---
+# The workloads are deleted when uninstalling the package.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kapp.k14s.io/delete-strategy: orphan

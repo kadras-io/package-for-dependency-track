@@ -1,0 +1,3 @@
+# expected: `domain_name` to be set when `ingress.enabled` is true
+---
+domain_name: ""

@@ -1,0 +1,8 @@
+---
+domain_name: dependency-track.kadras.io
+observability:
+  logging:
+    level: debug
+    format: json
+  metrics:
+    enabled: false
