@@ -1,6 +1,6 @@
 # Configuration
 
-The package values cover the decisions most installations need to make: the namespace and domain, the Ingress, the size of each component, the database, trust, observability, and the corporate proxy. Everything else can still be customized in two ways.
+The package values cover the decisions most installations need to make: the namespace and domain, the HTTPRoute, the size of each component, the database, trust, observability, and the corporate proxy. Everything else can still be customized in two ways.
 
 ## Application properties
 

@@ -25,19 +25,18 @@ namespace: dependency-track
 #@schema/validation ("a valid DNS name", lambda v: v == "" or is_dns_subdomain(v))
 domain_name: ""
 
-#@schema/desc "Settings for the Ingress exposing Dependency Track."
+#@schema/desc "Settings for the HTTPRoute exposing Dependency Track through a Gateway API Gateway, like the external Gateway of the Envoy Gateway package. TLS is terminated on the Gateway, which needs an HTTPS listener whose hostname matches `domain_name`, like the `*.<domain>` one of the Envoy Gateway package."
 ingress:
-  #@schema/desc "Whether to expose Dependency Track via an Ingress. When disabled, expose the `dependency-track-frontend` and `dependency-track-api-server` Services yourself."
+  #@schema/desc "Whether to expose Dependency Track via an HTTPRoute. When disabled, expose the `dependency-track-frontend` and `dependency-track-api-server` Services yourself."
   enabled: true
-  #@schema/desc "The IngressClass to use for the Ingress."
-  #@schema/validation min_len=1
-  class_name: contour
-  #@schema/desc "The cert-manager ClusterIssuer that issues the TLS certificate for the Ingress. When empty, the Secret named `ingress.tls_secret_name` must be provided."
-  #@schema/examples ("Kadras private CA", "kadras-ca-issuer")
-  issuer: ""
-  #@schema/desc "The name of the Secret holding the TLS certificate for the Ingress."
-  #@schema/validation ("a valid DNS name", is_dns_subdomain)
-  tls_secret_name: dependency-track-tls-secret
+  #@schema/desc "The Gateway the HTTPRoute attaches to. It must allow routes from the package namespace."
+  gateway:
+    #@schema/desc "The name of the Gateway."
+    #@schema/validation ("a valid DNS label", is_dns_label)
+    name: external
+    #@schema/desc "The namespace of the Gateway."
+    #@schema/validation ("a valid DNS label", is_dns_label)
+    namespace: envoy-gateway-system
 
 #@schema/desc "Settings for the Dependency Track container images."
 image:

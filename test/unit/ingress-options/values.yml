@@ -1,6 +1,0 @@
----
-domain_name: dependency-track.kadras.io
-ingress:
-  class_name: nginx
-  issuer: kadras-ca-issuer
-  tls_secret_name: dependency-track-certificate

@@ -1,6 +1,10 @@
 ---
+# Dependency Track is served over HTTPS by the external Gateway, which redirects HTTP to HTTPS.
+# The Frontend serves `/`, the API Server `/api`.
 apiVersion: kuttl.dev/v1beta1
 kind: TestAssert
+timeout: 120
 commands:
-  - script: |
-      curl --fail-with-body dependency-track.127.0.0.1.sslip.io/login
+  - script: ../../setup/scripts/probe.sh envoy-external http://dependency-track.127.0.0.1.sslip.io/login 301
+  - script: ../../setup/scripts/probe.sh envoy-external https://dependency-track.127.0.0.1.sslip.io/login 200
+  - script: ../../setup/scripts/probe.sh envoy-external https://dependency-track.127.0.0.1.sslip.io/api/version 200

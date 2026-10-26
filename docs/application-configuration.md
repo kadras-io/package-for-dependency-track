@@ -26,7 +26,7 @@ frontend:
     API_BASE_URL: "https://dependency-track.kadras.io"
 ```
 
-By default `API_BASE_URL` is left unset, because the Ingress serves the Frontend and the API Server from the same host, so the Frontend calls the API via relative URLs. Set it only when the API Server is reachable at a different address. Since the Frontend runs in the user's browser, that address must be reachable from the browser, not just from within the cluster.
+By default `API_BASE_URL` is left unset, because the HTTPRoute serves the Frontend and the API Server from the same host, so the Frontend calls the API via relative URLs. Set it only when the API Server is reachable at a different address. Since the Frontend runs in the user's browser, that address must be reachable from the browser, not just from within the cluster.
 
 ## Enabling OpenID Connect
 

@@ -7,8 +7,6 @@ metadata:
 stringData:
   values.yaml: |
     domain_name: "dependency-track.127.0.0.1.sslip.io"
-    ingress:
-      issuer: "kadras-ca-issuer"
     api_server:
       resources:
         requests:

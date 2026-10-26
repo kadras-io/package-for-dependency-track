@@ -20,6 +20,6 @@ At the first installation, Dependency Track creates an `admin` user with the `ad
 
 ## Network access
 
-The API Server and the Frontend are exposed via an Ingress, with TLS. The management port of the API Server, serving the health probes and the metrics, isn't exposed via a Service. PostgreSQL is only reachable from within the cluster.
+The API Server and the Frontend are exposed via an HTTPRoute, over HTTPS terminated on the Gateway. The management port of the API Server, serving the health probes and the metrics, isn't exposed via a Service. PostgreSQL is only reachable from within the cluster.
 
-The package doesn't include network policies. Add them with a ytt overlay (see [configuration.md](configuration.md#ytt-overlays)): the API Server needs to reach PostgreSQL and the external vulnerability data sources and package repositories, while the Frontend and the API Server need to be reachable from the Ingress controller.
+The package doesn't include network policies. Add them with a ytt overlay (see [configuration.md](configuration.md#ytt-overlays)): the API Server needs to reach PostgreSQL and the external vulnerability data sources and package repositories, while the Frontend and the API Server need to be reachable from the Envoy proxies of the Gateway.

@@ -6,3 +6,15 @@ commands:
       cd ../../../package && \
       kubectl config set-context --current --namespace=tests && \
       ytt -f ../test/integration/default/config -f package-resources.yml | kctrl dev -f- --local -y
+---
+# A client to send requests from inside the cluster (see test/setup/scripts/probe.sh).
+apiVersion: v1
+kind: Pod
+metadata:
+  name: curl
+  namespace: tests
+spec:
+  containers:
+  - name: curl
+    image: curlimages/curl:8.11.1
+    command: ["sleep", "infinity"]

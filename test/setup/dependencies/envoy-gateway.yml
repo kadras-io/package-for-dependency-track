@@ -2,37 +2,36 @@
 apiVersion: packaging.carvel.dev/v1alpha1
 kind: PackageInstall
 metadata:
-  name: contour
+  name: envoy-gateway
   namespace: tests
   annotations:
-    kapp.k14s.io/change-group: contour
+    kapp.k14s.io/change-group: envoy-gateway
     kapp.k14s.io/change-rule.cert-manager: upsert after upserting cert-manager
     kapp.k14s.io/change-rule.serviceaccount: delete before deleting serviceaccount
 spec:
   serviceAccountName: kadras-install-sa
   packageRef:
-    refName: contour.packages.kadras.io
+    refName: envoy-gateway.packages.kadras.io
     versionSelection:
-      constraints: 1.33.7
+      constraints: 1.9.3
   values:
     - secretRef:
-        name: contour-values
+        name: envoy-gateway-values
 
 ---
+# The external Gateway serves Dependency Track over HTTPS, via the `*.127.0.0.1.sslip.io` listener.
 apiVersion: v1
 kind: Secret
 metadata:
-  name: contour-values
+  name: envoy-gateway-values
   namespace: tests
 stringData:
   values.yaml: |
-    #! The kind preset: Envoy listens on the host ports of the worker node, which kind maps to the machine.
-    #! See: https://github.com/kadras-io/package-for-contour/blob/main/docs/local.md
-    contour:
-      replicas: 1
+    gateways:
+      external:
+        domain: 127.0.0.1.sslip.io
+        tls:
+          issuer: kadras-ca-issuer
     envoy:
-      kind: DaemonSet
-      host_ports:
-        enabled: true
       service:
         type: ClusterIP

@@ -1,0 +1,6 @@
+# expected: a valid DNS label
+---
+domain_name: dependency-track.kadras.io
+ingress:
+  gateway:
+    namespace: Envoy_Gateway

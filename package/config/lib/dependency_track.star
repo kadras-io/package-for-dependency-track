@@ -19,6 +19,9 @@ _postgresql_service_name = postgresql_cluster_name + "-rw"
 api_server_name = "dependency-track-api-server"
 frontend_name = "dependency-track-frontend"
 
+# The port of the Services exposing the two components.
+web_port = 8080
+
 # The working directory of the official container image. Dependency Track loads
 # additional properties from `${cwd}/config/application.properties`.
 config_directory = "/opt/owasp/dependency-track/config"

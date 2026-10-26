@@ -10,7 +10,7 @@ A Carvel package for [Dependency Track](https://dependencytrack.org), a continuo
 
 ## ✨&nbsp; What's Included
 
-* **Dependency Track**. The API Server and the Frontend, served from the same domain via an Ingress with a TLS certificate issued by cert-manager.
+* **Dependency Track**. The API Server and the Frontend, served from the same domain via a Gateway API HTTPRoute, over HTTPS terminated on the Gateway.
 * **Database**. A PostgreSQL cluster managed by CloudNativePG, tuned as recommended by Dependency Track. The database, the file storage, and the encryption key for the secrets are kept when uninstalling the package.
 * **Observability**. Structured logs, and metrics annotated for Prometheus scraping.
 * **Security**. The workloads comply with the `restricted` [Pod Security Standard](https://kubernetes.io/docs/concepts/security/pod-security-standards/), enforced on their namespace, and don't mount service account tokens. The key encrypting the secrets managed by Dependency Track is generated at installation time.
@@ -30,7 +30,7 @@ A Carvel package for [Dependency Track](https://dependencytrack.org), a continuo
 
 ### Dependencies
 
-Dependency Track requires [secretgen-controller](https://github.com/kadras-io/package-for-secretgen-controller) to generate its encryption key, and the [PostgreSQL Operator](https://github.com/kadras-io/package-for-postgresql-operator) to run its database. By default, it's exposed via an Ingress for [Contour](https://github.com/kadras-io/package-for-contour), with a TLS certificate issued by [cert-manager](https://github.com/kadras-io/package-for-cert-manager) when `ingress.issuer` is set. All of them are available to install from the [Kadras package repository](https://github.com/kadras-io/kadras-packages).
+Dependency Track requires [secretgen-controller](https://github.com/kadras-io/package-for-secretgen-controller) to generate its encryption key, and the [PostgreSQL Operator](https://github.com/kadras-io/package-for-postgresql-operator) to run its database. By default, it's exposed via an HTTPRoute on the external Gateway of [Envoy Gateway](https://github.com/kadras-io/package-for-envoy-gateway), which serves it over HTTPS when configured with a `domain` matching `domain_name` and a [cert-manager](https://github.com/kadras-io/package-for-cert-manager) issuer. All of them are available to install from the [Kadras package repository](https://github.com/kadras-io/kadras-packages).
 
 ### Installation
 
@@ -113,8 +113,6 @@ The Dependency Track package can be customized via a `values.yml` file.
 
 ```yaml
 domain_name: dependency-track.kadras.io
-ingress:
-  issuer: kadras-ca-issuer
 postgresql:
   instances: 3
 ```
@@ -143,10 +141,9 @@ The Dependency Track package has the following configurable properties.
 |--------|---------|-------------|
 | `namespace` | `"dependency-track"` | The namespace where to install Dependency Track. |
 | `domain_name` | `""` | The domain name where Dependency Track is served. Both the Frontend and the API Server (under `/api`) are served from it. |
-| `ingress.enabled` | `true` | Whether to expose Dependency Track via an Ingress. When disabled, expose the `dependency-track-frontend` and `dependency-track-api-server` Services yourself. |
-| `ingress.class_name` | `"contour"` | The IngressClass to use for the Ingress. |
-| `ingress.issuer` | `""` | The cert-manager ClusterIssuer that issues the TLS certificate for the Ingress. When empty, the Secret named `ingress.tls_secret_name` must be provided. |
-| `ingress.tls_secret_name` | `"dependency-track-tls-secret"` | The name of the Secret holding the TLS certificate for the Ingress. |
+| `ingress.enabled` | `true` | Whether to expose Dependency Track via an HTTPRoute. When disabled, expose the `dependency-track-frontend` and `dependency-track-api-server` Services yourself. |
+| `ingress.gateway.name` | `"external"` | The name of the Gateway. |
+| `ingress.gateway.namespace` | `"envoy-gateway-system"` | The namespace of the Gateway. |
 | `image.tag` | `""` | The tag to use for the API Server and Frontend container images, overriding the Dependency Track version bundled with this package. The images must be available in a container registry reachable from the cluster, since they are not part of the package bundle. |
 | `api_server.replicas` | `1` | The number of API Server replicas. Values greater than 1 require the `ReadWriteMany` access mode for the storage. |
 | `api_server.resources.requests.cpu` | `"0.5"` | The CPU requested by the API Server. |

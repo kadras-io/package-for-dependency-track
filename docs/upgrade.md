@@ -14,7 +14,7 @@ The values were reorganized to align with the other Kadras packages. Update your
 
 | Old value | New value |
 |-----------|-----------|
-| `ingress_issuer` | `ingress.issuer` (now optional) |
+| `ingress_issuer` | Removed: TLS is terminated on the Gateway (see below) |
 | `api_server.logging.level` | `observability.logging.level` |
 | `api_server.logging.format` (`console` or `json`) | `observability.logging.format` (`text` or `json`) |
 | `api_server.metrics.enabled` | `observability.metrics.enabled` |
@@ -26,11 +26,13 @@ Installations created before this version must untrack the Secret holding the ma
 kubectl label secret dependency-track-kek-material -n dependency-track kapp.k14s.io/app="" --overwrite
 ```
 
-The new values `namespace`, `ingress.enabled`, `ingress.class_name`, `ingress.tls_secret_name`, `postgresql.resources`, and `postgresql.storage.class_name` default to the previous behavior.
+Dependency Track is now exposed via a Gateway API HTTPRoute instead of an Ingress, on the external Gateway of the [Envoy Gateway package](https://github.com/kadras-io/package-for-envoy-gateway) by default (`ingress.gateway`). The Gateway terminates TLS and redirects HTTP to HTTPS: configure it with a `domain` (and a cert-manager issuer) whose `*.<domain>` wildcard covers `domain_name`. Upgrading replaces the Ingress with the HTTPRoute, so update the DNS record of `domain_name` to point at the Envoy Service of the Gateway (`envoy-external` in `envoy-gateway-system`).
+
+The new values `namespace`, `ingress.enabled`, `postgresql.resources`, and `postgresql.storage.class_name` default to the previous behavior.
 
 ## Uninstalling
 
-The data of Dependency Track lives in the PostgreSQL database and in the file storage of the API Server, and the secrets stored in the database are encrypted with a key generated at installation time. Uninstalling the package doesn't delete them: it deletes the API Server, the Frontend, and the Ingress, and keeps the namespace with the PostgreSQL Cluster, the PersistentVolumeClaim of the file storage, and the encryption key. PostgreSQL keeps running.
+The data of Dependency Track lives in the PostgreSQL database and in the file storage of the API Server, and the secrets stored in the database are encrypted with a key generated at installation time. Uninstalling the package doesn't delete them: it deletes the API Server, the Frontend, and the HTTPRoute, and keeps the namespace with the PostgreSQL Cluster, the PersistentVolumeClaim of the file storage, and the encryption key. PostgreSQL keeps running.
 
 Installing the package again in the same namespace adopts them, and Dependency Track starts with the existing data.
 

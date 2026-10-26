@@ -14,7 +14,8 @@
 #@      "pod_security_context",
 #@      "postgresql_secret_directory",
 #@      "postgresql_secret_name",
-#@      "storage_claim_name")
+#@      "storage_claim_name",
+#@      "web_port")
 
 #! The official container image bundles a Logback configuration producing JSON logs,
 #! which is enabled via a JVM system property.
@@ -38,7 +39,7 @@ spec:
   type: "ClusterIP"
   ports:
   - name: web
-    port: 8080
+    port: #@ web_port
     targetPort: web
   selector: #@ labels("api-server")
 

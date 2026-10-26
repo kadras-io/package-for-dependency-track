@@ -44,4 +44,4 @@ You can refer to the [CloudNativePG documentation](https://cloudnative-pg.io/doc
 
 ## Health
 
-The API Server exposes the `/health/started`, `/health/live`, and `/health/ready` endpoints on its management port (`9000`). They are used by the Kubernetes probes and are not exposed via the Ingress.
+The API Server exposes the `/health/started`, `/health/live`, and `/health/ready` endpoints on its management port (`9000`). They are used by the Kubernetes probes and are not exposed via the HTTPRoute.

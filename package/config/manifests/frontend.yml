@@ -6,7 +6,8 @@
 #@      "frontend_name",
 #@      "image_reference",
 #@      "labels",
-#@      "pod_security_context")
+#@      "pod_security_context",
+#@      "web_port")
 
 #! The Frontend is a static single-page application, entirely configured via environment
 #! variables that it renders into `/static/config.json` at startup.
@@ -25,7 +26,7 @@ spec:
   type: "ClusterIP"
   ports:
   - name: web
-    port: 8080
+    port: #@ web_port
     targetPort: web
   selector: #@ labels("frontend")
 
@@ -53,7 +54,7 @@ spec:
         #! The container writes `static/config.json` into the web root at startup, so the root filesystem can't be read-only.
         securityContext: #@ container_security_context(read_only_root_filesystem=False)
         resources: #@ data.values.frontend.resources
-        #! `API_BASE_URL` is intentionally left unset by default. The Ingress serves both the
+        #! `API_BASE_URL` is intentionally left unset by default. The HTTPRoute serves both the
         #! Frontend and the API Server from the same host, so the Frontend can call the API
         #! via relative URLs.
         #@ if/end environment():

@@ -1,39 +1,35 @@
 #@ load("@ytt:data", "data")
-#@ load("/lib/dependency_track.star", "api_server_name", "frontend_name", "labels")
+#@ load("/lib/dependency_track.star", "api_server_name", "frontend_name", "labels", "web_port")
 
+#! The Frontend and the API Server are served from the same host, so the Frontend calls the API via relative URLs.
+#! TLS and the redirect from HTTP to HTTPS are handled by the Gateway.
 #@ if data.values.ingress.enabled:
 ---
-apiVersion: networking.k8s.io/v1
-kind: Ingress
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
 metadata:
   name: dependency-track
   namespace: #@ data.values.namespace
   labels: #@ labels("ingress")
-  #@ if/end data.values.ingress.issuer != "":
-  annotations:
-    cert-manager.io/cluster-issuer: #@ data.values.ingress.issuer
 spec:
-  ingressClassName: #@ data.values.ingress.class_name
+  parentRefs:
+  - name: #@ data.values.ingress.gateway.name
+    namespace: #@ data.values.ingress.gateway.namespace
+  hostnames:
+  - #@ data.values.domain_name
   rules:
-  - host: #@ data.values.domain_name
-    http:
-      paths:
-      - path: /api
-        pathType: Prefix
-        backend:
-          service:
-            name: #@ api_server_name
-            port:
-              name: web
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: #@ frontend_name
-            port:
-              name: web
-  tls:
-  - hosts:
-    - #@ data.values.domain_name
-    secretName: #@ data.values.ingress.tls_secret_name
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /api
+    backendRefs:
+    - name: #@ api_server_name
+      port: #@ web_port
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: #@ frontend_name
+      port: #@ web_port
 #@ end
