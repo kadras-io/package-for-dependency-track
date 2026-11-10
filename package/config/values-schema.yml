@@ -165,7 +165,7 @@ observability:
     level: info
     #@schema/desc "The log format: `text`, or `json` for structured logs."
     #@schema/validation one_of=["text", "json"]
-    format: text
+    format: json
   #@schema/desc "Settings for the Prometheus metrics."
   metrics:
     #@schema/desc "Whether the API Server and PostgreSQL expose Prometheus metrics, and their Pods are annotated for scraping."

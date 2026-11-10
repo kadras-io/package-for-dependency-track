@@ -12,13 +12,13 @@ observability:
     level: info
 ```
 
-Logs are printed in a human-readable text format by default. If you collect logs with a
-structured logging pipeline, you can switch the format to JSON.
+Logs are printed in JSON format by default, for structured logging pipelines. For human-readable
+logs, for example during local development, switch the format to text.
 
 ```yaml
 observability:
   logging:
-    format: json
+    format: text
 ```
 
 ## Metrics

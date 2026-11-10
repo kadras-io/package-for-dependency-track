@@ -3,6 +3,6 @@ domain_name: dependency-track.kadras.io
 observability:
   logging:
     level: debug
-    format: json
+    format: text
   metrics:
     enabled: false

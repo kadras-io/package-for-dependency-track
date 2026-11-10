@@ -170,7 +170,7 @@ The Dependency Track package has the following configurable properties.
 | `postgresql.parameters` | `{}` | Configuration parameters for the PostgreSQL server, merged on top of the ones recommended by Dependency Track (`jit=off` and `wal_compression=zstd`). Remember that `max_connections` must cover the sum of the connection pools of all the API Server replicas, plus headroom for migrations, backups, and administrator sessions. |
 | `ca_cert_data` | `""` | PEM-encoded certificates of the CAs to trust in TLS connections, in addition to the public ones. They're imported into the Java truststore used by the API Server. |
 | `observability.logging.level` | `"info"` | The log verbosity level: `trace`, `debug`, `info`, `warn`, or `error`. |
-| `observability.logging.format` | `"text"` | The log format: `text`, or `json` for structured logs. |
+| `observability.logging.format` | `"json"` | The log format: `text`, or `json` for structured logs. |
 | `observability.metrics.enabled` | `true` | Whether the API Server and PostgreSQL expose Prometheus metrics, and their Pods are annotated for scraping. |
 | `proxy.http_proxy` | `""` | The proxy for the network traffic, in the form `http://[user[:password]@]host[:port]`. Used only when `https_proxy` is not set. |
 | `proxy.https_proxy` | `""` | The proxy for the network traffic, in the form `http://[user[:password]@]host[:port]`. |

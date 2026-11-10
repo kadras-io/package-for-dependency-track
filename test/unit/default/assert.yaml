@@ -47,7 +47,7 @@ spec:
         image: docker.io/dependencytrack/apiserver
         securityContext:
           readOnlyRootFilesystem: true
-        (env[?name == 'EXTRA_JAVA_OPTIONS'] | [0].value): ""
+        (env[?name == 'EXTRA_JAVA_OPTIONS'] | [0].value): -Dlogback.configurationFile=logback-json.xml
         (env[?ends_with(name, '_PROXY')] | length(@)): 0
 ---
 apiVersion: apps/v1
