@@ -1,8 +1,9 @@
 ---
-domain_name: dependency-track.kadras.io
 observability:
   logging:
     level: debug
     format: text
   metrics:
     enabled: false
+ingress:
+  hostname: dependency-track.kadras.io

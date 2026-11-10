@@ -1,0 +1,4 @@
+# expected: `ingress.hostname` to be set when `ingress.enabled` is true
+---
+ingress:
+  hostname: ""

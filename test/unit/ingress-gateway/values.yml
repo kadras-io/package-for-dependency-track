@@ -1,6 +1,6 @@
 ---
-domain_name: dependency-track.kadras.io
 ingress:
   gateway:
     name: public
     namespace: gateways
+  hostname: dependency-track.kadras.io

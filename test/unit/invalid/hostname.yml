@@ -1,0 +1,4 @@
+# expected: a valid DNS name
+---
+ingress:
+  hostname: https://dependency-track.kadras.io

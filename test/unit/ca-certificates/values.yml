@@ -1,6 +1,7 @@
 ---
-domain_name: dependency-track.kadras.io
 ca_cert_data: |
   -----BEGIN CERTIFICATE-----
   MIIBdummy
   -----END CERTIFICATE-----
+ingress:
+  hostname: dependency-track.kadras.io

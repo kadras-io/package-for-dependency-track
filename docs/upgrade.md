@@ -26,9 +26,19 @@ Installations created before this version must untrack the Secret holding the ma
 kubectl label secret dependency-track-kek-material -n dependency-track kapp.k14s.io/app="" --overwrite
 ```
 
-Dependency Track is now exposed via a Gateway API HTTPRoute instead of an Ingress, on the external Gateway of the [Envoy Gateway package](https://github.com/kadras-io/package-for-envoy-gateway) by default (`ingress.gateway`). The Gateway terminates TLS and redirects HTTP to HTTPS: configure it with a `domain` (and a cert-manager issuer) whose `*.<domain>` wildcard covers `domain_name`. Upgrading replaces the Ingress with the HTTPRoute, so update the DNS record of `domain_name` to point at the Envoy Service of the Gateway (`envoy-external` in `envoy-gateway-system`).
+Dependency Track is now exposed via a Gateway API HTTPRoute instead of an Ingress, on the external Gateway of the [Envoy Gateway package](https://github.com/kadras-io/package-for-envoy-gateway) by default (`ingress.gateway`). The Gateway terminates TLS and redirects HTTP to HTTPS: configure it with a `domain` (and a cert-manager issuer) whose `*.<domain>` wildcard covers `ingress.hostname`. Upgrading replaces the Ingress with the HTTPRoute, so update the DNS record of `ingress.hostname` to point at the Envoy Service of the Gateway (`envoy-external` in `envoy-gateway-system`).
 
 The new values `namespace`, `ingress.enabled`, `postgresql.resources`, and `postgresql.storage.class_name` default to the previous behavior.
+
+## Values changed after the new package foundation
+
+The following values changed after the version introducing the new package foundation, to align with the other Kadras packages. The package rejects the old values.
+
+| Old value | New value |
+|-----------|-----------|
+| `domain_name` | `ingress.hostname`, following the Gateway API naming of the HTTPRoute it configures |
+
+The logs are now in JSON format by default. To keep the previous text format, set `observability.logging.format` to `text`.
 
 ## Uninstalling
 

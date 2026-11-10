@@ -30,7 +30,7 @@ A Carvel package for [Dependency Track](https://dependencytrack.org), a continuo
 
 ### Dependencies
 
-Dependency Track requires [secretgen-controller](https://github.com/kadras-io/package-for-secretgen-controller) to generate its encryption key, and the [PostgreSQL Operator](https://github.com/kadras-io/package-for-postgresql-operator) to run its database. By default, it's exposed via an HTTPRoute on the external Gateway of [Envoy Gateway](https://github.com/kadras-io/package-for-envoy-gateway), which serves it over HTTPS when configured with a `domain` matching `domain_name` and a [cert-manager](https://github.com/kadras-io/package-for-cert-manager) issuer. All of them are available to install from the [Kadras package repository](https://github.com/kadras-io/kadras-packages).
+Dependency Track requires [secretgen-controller](https://github.com/kadras-io/package-for-secretgen-controller) to generate its encryption key, and the [PostgreSQL Operator](https://github.com/kadras-io/package-for-postgresql-operator) to run its database. By default, it's exposed via an HTTPRoute on the external Gateway of [Envoy Gateway](https://github.com/kadras-io/package-for-envoy-gateway), which serves it over HTTPS when configured with a `domain` matching `ingress.hostname` and a [cert-manager](https://github.com/kadras-io/package-for-cert-manager) issuer. All of them are available to install from the [Kadras package repository](https://github.com/kadras-io/kadras-packages).
 
 ### Installation
 
@@ -84,7 +84,7 @@ kubectl get deployment -n dependency-track
 kubectl get cluster.postgresql.cnpg.io -n dependency-track
 ```
 
-Open the domain configured in `domain_name` in your browser, and log in with the default `admin` user and `admin` password. You'll be asked to change the password at the first login.
+Open the hostname configured in `ingress.hostname` in your browser, and log in with the default `admin` user and `admin` password. You'll be asked to change the password at the first login.
 
 ## 📙&nbsp; Documentation
 
@@ -112,7 +112,8 @@ Operations:
 The Dependency Track package can be customized via a `values.yml` file.
 
 ```yaml
-domain_name: dependency-track.kadras.io
+ingress:
+  hostname: dependency-track.kadras.io
 postgresql:
   instances: 3
 ```
@@ -140,8 +141,8 @@ The Dependency Track package has the following configurable properties.
 | Config | Default | Description |
 |--------|---------|-------------|
 | `namespace` | `"dependency-track"` | The namespace where to install Dependency Track. |
-| `domain_name` | `""` | The domain name where Dependency Track is served. Both the Frontend and the API Server (under `/api`) are served from it. |
 | `ingress.enabled` | `true` | Whether to expose Dependency Track via an HTTPRoute. When disabled, expose the `dependency-track-frontend` and `dependency-track-api-server` Services yourself. |
+| `ingress.hostname` | `""` | The hostname where Dependency Track is served. Both the Frontend and the API Server (under `/api`) are served from it. Required when `enabled` is true. |
 | `ingress.gateway.name` | `"external"` | The name of the Gateway. |
 | `ingress.gateway.namespace` | `"envoy-gateway-system"` | The namespace of the Gateway. |
 | `image.tag` | `""` | The tag to use for the API Server and Frontend container images, overriding the Dependency Track version bundled with this package. The images must be available in a container registry reachable from the cluster, since they are not part of the package bundle. |

@@ -1,5 +1,4 @@
 ---
-domain_name: dependency-track.kadras.io
 postgresql:
   instances: 3
   resources:
@@ -15,3 +14,5 @@ postgresql:
     max_connections: 200
     shared_buffers: 2GB
     log_checkpoints: true
+ingress:
+  hostname: dependency-track.kadras.io

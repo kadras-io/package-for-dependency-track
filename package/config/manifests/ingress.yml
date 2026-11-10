@@ -16,7 +16,7 @@ spec:
   - name: #@ data.values.ingress.gateway.name
     namespace: #@ data.values.ingress.gateway.namespace
   hostnames:
-  - #@ data.values.domain_name
+  - #@ data.values.ingress.hostname
   rules:
   - matches:
     - path:

@@ -1,7 +1,7 @@
 #@ load("/lib/validation.star", "access_modes", "is_dns_label", "is_dns_subdomain", "is_flat_map", "is_proxy_url")
 
-#@ def domain_name_set(values):
-#@   return not values["ingress"]["enabled"] or values["domain_name"] != ""
+#@ def hostname_set(values):
+#@   return not values["ingress"]["enabled"] or values["ingress"]["hostname"] != ""
 #@ end
 
 #@ def shared_storage(values):
@@ -9,7 +9,7 @@
 #@ end
 
 #@data/values-schema
-#@schema/validation ("`domain_name` to be set when `ingress.enabled` is true", domain_name_set), ("`api_server.storage.access_modes` to include `ReadWriteMany` when `api_server.replicas` is greater than 1, since all the replicas mount the same volume", shared_storage)
+#@schema/validation ("`ingress.hostname` to be set when `ingress.enabled` is true", hostname_set), ("`api_server.storage.access_modes` to include `ReadWriteMany` when `api_server.replicas` is greater than 1, since all the replicas mount the same volume", shared_storage)
 ---
 
 #! =============================================
@@ -20,15 +20,14 @@
 #@schema/validation ("a valid DNS label", is_dns_label)
 namespace: dependency-track
 
-#@schema/desc "The domain name where Dependency Track is served. Both the Frontend and the API Server (under `/api`) are served from it."
-#@schema/examples ("Kadras domain", "dependency-track.kadras.io")
-#@schema/validation ("a valid DNS name", lambda v: v == "" or is_dns_subdomain(v))
-domain_name: ""
-
-#@schema/desc "Settings for the HTTPRoute exposing Dependency Track through a Gateway API Gateway, like the external Gateway of the Envoy Gateway package. TLS is terminated on the Gateway, which needs an HTTPS listener whose hostname matches `domain_name`, like the `*.<domain>` one of the Envoy Gateway package."
+#@schema/desc "Settings for the HTTPRoute exposing Dependency Track through a Gateway API Gateway, like the external Gateway of the Envoy Gateway package. TLS is terminated on the Gateway, which needs an HTTPS listener whose hostname matches `ingress.hostname`, like the `*.<domain>` one of the Envoy Gateway package."
 ingress:
   #@schema/desc "Whether to expose Dependency Track via an HTTPRoute. When disabled, expose the `dependency-track-frontend` and `dependency-track-api-server` Services yourself."
   enabled: true
+  #@schema/desc "The hostname where Dependency Track is served. Both the Frontend and the API Server (under `/api`) are served from it. Required when `enabled` is true."
+  #@schema/examples ("Kadras domain", "dependency-track.kadras.io")
+  #@schema/validation ("a valid DNS name", lambda v: v == "" or is_dns_subdomain(v))
+  hostname: ""
   #@schema/desc "The Gateway the HTTPRoute attaches to. It must allow routes from the package namespace."
   gateway:
     #@schema/desc "The name of the Gateway."

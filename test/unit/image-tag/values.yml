@@ -1,4 +1,5 @@
 ---
-domain_name: dependency-track.kadras.io
 image:
   tag: 5.2.2
+ingress:
+  hostname: dependency-track.kadras.io

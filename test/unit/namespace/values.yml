@@ -1,3 +1,4 @@
 ---
 namespace: sbom
-domain_name: dependency-track.kadras.io
+ingress:
+  hostname: dependency-track.kadras.io

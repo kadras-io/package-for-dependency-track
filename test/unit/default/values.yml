@@ -1,3 +1,4 @@
-#! The default values, plus the required domain name.
+#! The default values, plus the required hostname.
 ---
-domain_name: dependency-track.kadras.io
+ingress:
+  hostname: dependency-track.kadras.io

@@ -1,4 +1,5 @@
 # expected: a valid DNS label
 ---
 namespace: Dependency_Track
-domain_name: dependency-track.kadras.io
+ingress:
+  hostname: dependency-track.kadras.io

@@ -1,5 +1,6 @@
 ---
-domain_name: dependency-track.kadras.io
 proxy:
   https_proxy: http://proxy.kadras.io:3128
   no_proxy: localhost,kadras.io
+ingress:
+  hostname: dependency-track.kadras.io
