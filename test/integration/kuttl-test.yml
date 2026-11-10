@@ -29,8 +29,8 @@ commands:
   - script: |
       kubectl config set-context --current --namespace=tests && \
       kapp deploy -a envoy-gateway-package -y \
-        -f https://github.com/kadras-io/package-for-envoy-gateway/releases/download/v1.9.3/package.yml \
-        -f https://github.com/kadras-io/package-for-envoy-gateway/releases/download/v1.9.3/metadata.yml
+        -f https://github.com/kadras-io/package-for-envoy-gateway/releases/download/v1.10.0/package.yml \
+        -f https://github.com/kadras-io/package-for-envoy-gateway/releases/download/v1.10.0/metadata.yml
   - script: |
       kubectl config set-context --current --namespace=tests && \
       kapp deploy -a postgresql-operator-package -y \

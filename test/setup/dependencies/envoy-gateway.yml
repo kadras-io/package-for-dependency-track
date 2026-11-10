@@ -13,7 +13,7 @@ spec:
   packageRef:
     refName: envoy-gateway.packages.kadras.io
     versionSelection:
-      constraints: 1.9.3
+      constraints: 1.10.0
   values:
     - secretRef:
         name: envoy-gateway-values
